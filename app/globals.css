@@ -1,0 +1,73 @@
+@import "tailwindcss";
+
+/* Token desain (§3.2). md = ≥761px, lg = ≥1001px (§3.3 responsif). */
+@theme {
+  --font-sans: var(--font-jakarta), system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --breakpoint-md: 761px;
+  --breakpoint-lg: 1001px;
+
+  /* Mengikuti tampilan SupplyFlow (aplikasi internal UB Coffee): navy + aksen hijau, latar putih. */
+  --color-navy: #0f3c6b;
+  --color-navy-hover: #0b2f55;
+  --color-sidebar: #ffffff;
+  --color-sidebar-active: #1a4f86;
+  --color-brand: #16a34a;
+  --color-brand-fg: #15803d;
+  --color-page: #f8fafc;
+  --color-line: #e2e8f0;
+  --color-ink: #10243f;
+  --color-ink-2: #475569;
+  --color-ink-3: #64748b;
+  --color-badge: #facc15;
+
+  --color-warn-bg: #fef3c7;
+  --color-warn-fg: #92400e;
+  --color-ok-bg: #dcfce7;
+  --color-ok-fg: #166534;
+  --color-mute-bg: #e2e8f0;
+  --color-mute-fg: #334155;
+  --color-danger: #b91c1c;
+  --color-danger-bg: #fee2e2;
+
+  --radius-card: 16px;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: #ffffff;
+  color: var(--color-ink);
+  overflow-x: hidden;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-sidebar-active);
+  outline-offset: 2px;
+}
+
+dialog::backdrop {
+  background: rgb(15 23 42 / 0.5);
+}
+
+dialog[open] {
+  animation: dialog-in 0.14s ease-out;
+}
+
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
