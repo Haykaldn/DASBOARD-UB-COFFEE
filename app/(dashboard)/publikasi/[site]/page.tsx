@@ -8,7 +8,8 @@ type Props = { params: Promise<{ site: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { site } = await params;
-  return { title: isSiteSlug(site) ? `Publikasi ${SITES[site].name}` : "Publikasi" };
+  if (!isSiteSlug(site)) return { title: "Publikasi" };
+  return { title: site === "ub-coffee" ? "Konten Website UB Coffee" : `Publikasi ${SITES[site].name}` };
 }
 
 export default async function PublikasiPage({ params }: Props) {

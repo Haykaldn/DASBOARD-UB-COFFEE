@@ -11,6 +11,18 @@ export const SITES: Record<SiteSlug, SiteConfig> = {
     hasGallery: false,
     menuStyle: "CAROUSEL",
     postTypes: ["BERITA", "ARTIKEL"],
+    // Sama dengan tag di kartu Berita & Artikel website.
+    postTags: {
+      BERITA: [
+        { value: "event", label: "Event" },
+        { value: "promo", label: "Promo" },
+        { value: "info", label: "Info" },
+      ],
+      ARTIKEL: [
+        { value: "tips", label: "Tips Kopi" },
+        { value: "cerita", label: "Cerita" },
+      ],
+    },
     hasPostDetail: true,
     hasMenuPdf: true,
     hasTasteTags: false,
@@ -22,7 +34,8 @@ export const SITES: Record<SiteSlug, SiteConfig> = {
     name: "BREWi JAYA",
     url: "https://brewi-jaya.vercel.app",
     heroMode: "SINGLE",
-    sections: ["hero", "tentang", "menu", "event", "galeri", "lokasi"],
+    // Hanya Publikasi (Artikel & Berita); editor landing page tidak dipakai untuk BREWi JAYA.
+    sections: ["event"],
     hasGallery: true,
     menuStyle: "LIST",
     postTypes: ["EVENT", "PROMO", "MENU_BARU"],
@@ -71,7 +84,7 @@ export function navFor(user: SessionUser): NavItem[] {
       badge: "pending",
       enabled: canAccessMeetingRoom(user),
     },
-    { href: "/publikasi/ub-coffee", label: "Publikasi UB Coffee", icon: "coffee", enabled: canAccessSite(user, "ub-coffee") },
+    { href: "/publikasi/ub-coffee", label: "Konten Website UB Coffee", icon: "coffee", enabled: canAccessSite(user, "ub-coffee") },
     {
       href: "/publikasi/brewi-jaya",
       label: "Publikasi BREWi JAYA",

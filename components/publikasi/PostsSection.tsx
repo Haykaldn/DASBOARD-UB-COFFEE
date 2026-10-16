@@ -20,6 +20,17 @@ export const POST_TYPE_LABEL: Record<PostType, string> = {
   INFO: "Info",
 };
 
+/** Pilihan tag untuk tipe post di situs ini; kosong = tipe tersebut tidak memakai tag. */
+function tagsFor(site: SiteConfig, type: PostType) {
+  return site.postTags?.[type] ?? [];
+}
+
+/** Label kartu: tipe, ditambah tag bila ada (mis. "Berita · Event"). */
+function postLabel(site: SiteConfig, p: Post) {
+  const tag = tagsFor(site, p.type).find((t) => t.value === p.tag);
+  return tag ? `${POST_TYPE_LABEL[p.type]} · ${tag.label}` : POST_TYPE_LABEL[p.type];
+}
+
 const STATUS_OPTIONS: { value: PublishStatus; label: string; hint: string; icon: IconName }[] = [
   { value: "DRAFT", label: "Draft", hint: "Belum tampil publik", icon: "clock" },
   { value: "PUBLISHED", label: "Terbit", hint: "Siap dibaca publik", icon: "checkCircle" },
@@ -92,7 +103,7 @@ export default function PostsSection({ site }: { site: SiteConfig }) {
                   <PhotoView photo={p.cover} label={`Belum ada poster ${p.title}`} />
                   <div className="absolute inset-x-2 top-2 flex flex-wrap justify-between gap-1.5">
                     <StatusChip tone="info" className="bg-white/95 text-ink">
-                      {POST_TYPE_LABEL[p.type]}
+                      {postLabel(site, p)}
                     </StatusChip>
                     <StatusChip tone={st.tone}>{st.label}</StatusChip>
                   </div>
@@ -146,6 +157,7 @@ function PostEditor({
       : {
           id: uid("p"),
           type: site.postTypes[0],
+          tag: tagsFor(site, site.postTypes[0])[0]?.value,
           title: "",
           slug: "",
           excerpt: "",
@@ -160,6 +172,7 @@ function PostEditor({
   );
   const [v, setV] = useState<Post>(initial);
   const seo = v.seo ?? EMPTY_SEO;
+  const tags = tagsFor(site, v.type);
   const setSeo = (patch: Partial<PostSeo>) => setV({ ...v, seo: { ...seo, ...patch } });
   const [slugTouched, setSlugTouched] = useState(!!post);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -188,6 +201,7 @@ function PostEditor({
       if (v.excerpt.trim().length < 3) e.excerpt = "Isi teks singkat yang tampil di kartu.";
     } else if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(v.slug)) e.slug = "Hanya huruf kecil, angka, dan tanda hubung.";
     else if (slugTaken(v.slug, v.id)) e.slug = "Slug sudah dipakai post lain.";
+    if (tags.length && !tags.some((t) => t.value === v.tag)) e.tag = "Pilih tag.";
     if (!v.publishedAt) e.publishedAt = "Isi tanggal terbit.";
     if (seo.metaTitle.length > META_TITLE_MAX) e.metaTitle = `Maksimal ${META_TITLE_MAX} karakter.`;
     if (seo.metaDescription.length > META_DESC_MAX) e.metaDescription = `Maksimal ${META_DESC_MAX} karakter.`;
@@ -208,6 +222,7 @@ function PostEditor({
       slug,
       title: v.title.trim(),
       excerpt: v.excerpt.trim(),
+      tag: tags.length ? v.tag : undefined,
       // Periode tayang tidak lagi dipakai; bersihkan sisa data lama saat disimpan.
       startsAt: "",
       endsAt: "",
@@ -321,7 +336,16 @@ function PostEditor({
               <h3 className="text-[11px] font-extrabold tracking-[0.12em] text-ink-3 uppercase">Pengaturan Terbit</h3>
               <Field label="Tipe">
                 {(id) => (
-                  <select id={id} value={v.type} onChange={(e) => setV({ ...v, type: e.target.value as PostType })} className={inputCls}>
+                  <select
+                    id={id}
+                    value={v.type}
+                    onChange={(e) => {
+                      const type = e.target.value as PostType;
+                      // Tag lama belum tentu ada di tipe baru: pakai tag pertama tipe tersebut.
+                      setV({ ...v, type, tag: tagsFor(site, type)[0]?.value });
+                    }}
+                    className={inputCls}
+                  >
                     {site.postTypes.map((t) => (
                       <option key={t} value={t}>
                         {POST_TYPE_LABEL[t]}
@@ -330,6 +354,27 @@ function PostEditor({
                   </select>
                 )}
               </Field>
+              {tags.length > 0 && (
+                <Field label="Tag" error={errors.tag} showOn="Label kecil di kartu dan halaman detail publikasi">
+                  {(id, d) => (
+                    <select
+                      id={id}
+                      aria-describedby={d}
+                      aria-invalid={!!errors.tag}
+                      value={v.tag ?? ""}
+                      onChange={(e) => setV({ ...v, tag: e.target.value })}
+                      className={inputCls}
+                    >
+                      {!tags.some((t) => t.value === v.tag) && <option value="">Pilih tag</option>}
+                      {tags.map((t) => (
+                        <option key={t.value} value={t.value}>
+                          {t.label}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </Field>
+              )}
               <fieldset>
                 <legend className="mb-2 text-[11px] font-extrabold tracking-[0.12em] text-ink-3 uppercase">Status</legend>
                 <div className="grid gap-2.5">

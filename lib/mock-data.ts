@@ -52,6 +52,7 @@ function ubCoffee(today: string): SiteContent {
     {
       id: "ub_p1",
       type: "BERITA",
+      tag: "event",
       title: "Live Akustik Jumat Malam",
       slug: "live-akustik-jumat-malam",
       excerpt: "Tutup minggu dengan musik akustik dari musisi kampus. Mulai pukul 19.00, gratis untuk semua pengunjung.",
@@ -65,6 +66,7 @@ function ubCoffee(today: string): SiteContent {
     {
       id: "ub_p2",
       type: "BERITA",
+      tag: "promo",
       title: "Diskon 15% Civitas UB",
       slug: "diskon-15-civitas-ub",
       excerpt: "Tunjukkan kartu identitas UB untuk potongan 15% semua minuman, Senin – Kamis.",
@@ -77,7 +79,8 @@ function ubCoffee(today: string): SiteContent {
     },
     {
       id: "ub_p3",
-      type: "ARTIKEL",
+      type: "BERITA",
+      tag: "event",
       title: "Kelas Seduh Manual",
       slug: "kelas-seduh-manual",
       excerpt: "Belajar dasar V60 bersama barista UB Coffee. Kuota 12 orang.",
@@ -91,6 +94,7 @@ function ubCoffee(today: string): SiteContent {
     {
       id: "ub_p5",
       type: "BERITA",
+      tag: "info",
       title: "Jam Buka Libur Nasional",
       slug: "jam-buka-libur-nasional",
       excerpt: "Saat libur nasional, UB Coffee buka pukul 12.00 – 20.00.",
@@ -104,6 +108,7 @@ function ubCoffee(today: string): SiteContent {
     {
       id: "ub_p4",
       type: "BERITA",
+      tag: "info",
       title: "Matcha Latte Segera Hadir",
       slug: "matcha-latte-segera-hadir",
       excerpt: "Menu baru untuk pencinta teh hijau.",

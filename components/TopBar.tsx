@@ -8,7 +8,8 @@ function pageInfo(pathname: string) {
   if (pathname.startsWith("/meeting-room"))
     return { title: "Meeting Room", subtitle: "Booking ruang meeting UB Coffee", site: SITES["ub-coffee"] };
   const site = pathname.startsWith("/publikasi/brewi-jaya") ? SITES["brewi-jaya"] : SITES["ub-coffee"];
-  return { title: `Publikasi ${site.name}`, subtitle: `Kelola konten website ${site.name}`, site };
+  const title = site.slug === "ub-coffee" ? "Konten" : `Publikasi ${site.name}`;
+  return { title, subtitle: `Kelola konten website ${site.name}`, site };
 }
 
 /** Banner navy di atas konten: tombol panel, judul halaman, dan tautan ke website. */

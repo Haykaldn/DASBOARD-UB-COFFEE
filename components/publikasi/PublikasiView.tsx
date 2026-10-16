@@ -69,6 +69,7 @@ const GROUPS: { key: "event" | "landing"; label: string }[] = [
  * - Publikasi: Artikel & Berita.
  * - Landing Page: kartu tiap bagian halaman landing, urut sesuai website (`SiteConfig.sections`);
  *   klik kartu untuk membuka editornya. Bagian yang tidak dimiliki situs tidak ditampilkan.
+ * Situs tanpa bagian landing (BREWi JAYA) hanya menampilkan Publikasi, tanpa navigasi tab.
  */
 export default function PublikasiView({ slug }: { slug: SiteSlug }) {
   const { ready, content, confirmLeave } = useStore();
@@ -76,17 +77,19 @@ export default function PublikasiView({ slug }: { slug: SiteSlug }) {
   const c = content[slug];
   const [editingMenu, setEditingMenu] = useState<MenuItem | "new" | null>(null);
   const landingSections = site.sections.filter((k): k is LandingKey => k !== "event");
+  const hasLanding = landingSections.length > 0;
   // Tampilan aktif disimpan di hash URL (#landing, #menu) agar bisa dibagikan / tetap saat dimuat ulang.
   const [view, setView] = useState<View>(() => {
     const h = typeof window === "undefined" ? "" : window.location.hash.slice(1);
-    if (h === "landing") return "landing";
+    if (h === "landing" && hasLanding) return "landing";
     return landingSections.find((k) => k === h) ?? "event";
   });
 
   if (!ready) return <SkeletonPage />;
 
   const available = c.menu.filter((m) => m.isAvailable).length;
-  const live = c.posts.filter((p) => postState(p).live).length;
+  const states = c.posts.map((p) => postState(p));
+  const live = states.filter((s) => s.live).length;
   const group = view === "event" ? "event" : "landing";
 
   /** Pindah tampilan; form yang belum disimpan di tampilan lama memicu konfirmasi. */
@@ -108,40 +111,51 @@ export default function PublikasiView({ slug }: { slug: SiteSlug }) {
 
   return (
     <>
-      <StatGrid>
-        <StatCard icon="coffee" tone="green" value={`${available}/${c.menu.length}`} label="Menu tersedia" />
-        <StatCard icon="megaphone" tone="yellow" value={live} label="Artikel & berita tayang" />
-        {site.hasGallery ? (
-          <StatCard icon="images" tone="blue" value={c.gallery.length} label="Foto galeri" />
-        ) : (
-          <StatCard icon="images" tone="blue" value={c.hero.length} label="Foto hero" />
-        )}
-        <StatCard icon="store" tone="slate" value={c.outlets.length} label="Outlet" />
-      </StatGrid>
+      {hasLanding ? (
+        <StatGrid>
+          <StatCard icon="coffee" tone="green" value={`${available}/${c.menu.length}`} label="Menu tersedia" />
+          <StatCard icon="megaphone" tone="yellow" value={live} label="Artikel & berita tayang" />
+          {site.hasGallery ? (
+            <StatCard icon="images" tone="blue" value={c.gallery.length} label="Foto galeri" />
+          ) : (
+            <StatCard icon="images" tone="blue" value={c.hero.length} label="Foto hero" />
+          )}
+          <StatCard icon="store" tone="slate" value={c.outlets.length} label="Outlet" />
+        </StatGrid>
+      ) : (
+        <StatGrid>
+          <StatCard icon="megaphone" tone="green" value={live} label="Tayang" />
+          <StatCard icon="clock" tone="yellow" value={states.filter((s) => s.label === "Terjadwal").length} label="Terjadwal" />
+          <StatCard icon="edit" tone="blue" value={states.filter((s) => s.label === "Draft").length} label="Draft" />
+          <StatCard icon="archive" tone="slate" value={c.posts.length} label="Total publikasi" />
+        </StatGrid>
+      )}
 
-      <div className="mb-5 rounded-2xl border border-line bg-page p-1.5">
-        <div role="tablist" aria-label="Navigasi publikasi" className="flex gap-1">
-          {GROUPS.map((g) => {
-            const active = g.key === group;
-            return (
-              <button
-                key={g.key}
-                type="button"
-                role="tab"
-                aria-selected={active}
-                // Klik "Landing Page" dari dalam editor bagian = kembali ke daftar kartu.
-                onClick={() => go(g.key)}
-                className={cx(
-                  "inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-xl px-4 text-[13px] font-bold whitespace-nowrap transition-colors",
-                  active ? "bg-navy text-white shadow-[0_6px_14px_-8px_rgb(15_60_107/0.7)]" : "text-ink-2 hover:bg-white hover:text-navy",
-                )}
-              >
-                {g.label}
-              </button>
-            );
-          })}
+      {hasLanding && (
+        <div className="mb-5 rounded-2xl border border-line bg-page p-1.5">
+          <div role="tablist" aria-label="Navigasi publikasi" className="flex gap-1">
+            {GROUPS.map((g) => {
+              const active = g.key === group;
+              return (
+                <button
+                  key={g.key}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  // Klik "Landing Page" dari dalam editor bagian = kembali ke daftar kartu.
+                  onClick={() => go(g.key)}
+                  className={cx(
+                    "inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-xl px-4 text-[13px] font-bold whitespace-nowrap transition-colors",
+                    active ? "bg-navy text-white shadow-[0_6px_14px_-8px_rgb(15_60_107/0.7)]" : "text-ink-2 hover:bg-white hover:text-navy",
+                  )}
+                >
+                  {g.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
       {view === "event" && <PostsSection site={site} />}
 
@@ -167,9 +181,7 @@ export default function PublikasiView({ slug }: { slug: SiteSlug }) {
                       <span className="grid size-12 place-items-center rounded-2xl bg-navy/[0.07] text-navy transition-colors group-hover:bg-navy group-hover:text-white">
                         <Icon name={s.icon} size={24} />
                       </span>
-                      <span className="grid size-6 place-items-center rounded-md bg-page text-[11px] font-bold text-ink-3 tabular-nums">
-                        {i + 1}
-                      </span>
+                      <span className="grid size-6 place-items-center rounded-md bg-page text-[11px] font-bold text-ink-3 tabular-nums">{i + 1}</span>
                     </div>
                     <h3 className="mt-4 text-base font-extrabold text-navy">{s.label}</h3>
                     <p className="mt-1 text-[13px] text-ink-3">{s.desc}</p>

@@ -84,9 +84,13 @@ export type Post = {
   startsAt: string; // YYYY-MM-DD atau ""
   endsAt: string;
   status: PublishStatus;
+  /** Nilai tag dari `SiteConfig.postTags[type]`, mis. "event". Kosong = tanpa tag. */
+  tag?: string;
   /** Pengaturan SEO halaman detail; kosong = website memakai judul & ringkasan. */
   seo?: PostSeo;
 };
+
+export type PostTag = { value: string; label: string };
 
 export type PostSeo = {
   metaTitle: string;
@@ -169,6 +173,8 @@ export type SiteConfig = {
   menuStyle: "CAROUSEL" | "LIST";
   /** Tipe post yang dipakai website ini. */
   postTypes: PostType[];
+  /** Pilihan tag per tipe post, sama dengan label tag di kartu website. Tipe tanpa daftar tidak punya tag. */
+  postTags?: Partial<Record<PostType, PostTag[]>>;
   /** true = post punya halaman detail (slug + isi). false = hanya kartu ringkas. */
   hasPostDetail: boolean;
   hasMenuPdf: boolean;
