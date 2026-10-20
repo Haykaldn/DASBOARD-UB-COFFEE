@@ -3,17 +3,15 @@
  * Ubah nama/hapus tag dan merapikan tag yang tidak dipakai menyusul (perlu aturan untuk tag yang masih dipakai).
  */
 import { slugify, uid } from "../format";
-import { TAG_LABEL_MAX } from "../posts";
-import { SITES } from "../sites";
+import { POST_TYPES, TAG_LABEL_MAX } from "../posts";
 import type { PostTag, PostType, SiteSlug } from "../types";
 import { clone, delay, SAVE_DELAY_MS, siteContent } from "./mock-db";
 
 export async function createPostTag(site: SiteSlug, input: { label: string; type: PostType }): Promise<PostTag> {
   await delay(SAVE_DELAY_MS);
-  const config = SITES[site];
   const label = input.label.trim();
   const slug = slugify(label);
-  if (!config.hasPostTags || !config.postTypes.includes(input.type)) throw new Error("TAGS_NOT_ALLOWED");
+  if (!POST_TYPES.includes(input.type)) throw new Error("TAG_INVALID");
   if (!label || label.length > TAG_LABEL_MAX || !slug) throw new Error("TAG_INVALID");
 
   const c = siteContent(site);

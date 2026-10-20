@@ -10,9 +10,6 @@ export const SITES: Record<SiteSlug, SiteConfig> = {
     sections: ["hero", "menu", "reservasi", "lokasi", "event", "tentang"],
     hasGallery: false,
     menuStyle: "CAROUSEL",
-    postTypes: ["BERITA", "ARTIKEL"],
-    // Daftar tag adalah data (SiteContent.postTags), sama dengan filter tag di website.
-    hasPostTags: true,
     hasPostDetail: true,
     hasMenuPdf: true,
     hasTasteTags: false,
@@ -24,12 +21,10 @@ export const SITES: Record<SiteSlug, SiteConfig> = {
     name: "BREWi JAYA",
     url: "https://brewi-jaya.vercel.app",
     heroMode: "SINGLE",
-    // Hanya Publikasi (Artikel & Berita); editor landing page tidak dipakai untuk BREWi JAYA.
+    // Hanya Publikasi (Berita & Artikel + tag, sama dengan UB Coffee); editor landing page tidak dipakai untuk BREWi JAYA.
     sections: ["event"],
     hasGallery: true,
     menuStyle: "LIST",
-    postTypes: ["EVENT", "PROMO", "MENU_BARU"],
-    hasPostTags: false,
     hasPostDetail: true,
     hasMenuPdf: false,
     hasTasteTags: true,

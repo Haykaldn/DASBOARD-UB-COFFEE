@@ -1,15 +1,15 @@
 import { todayISO } from "./format";
 import type { Post, PostTag, PostType, Tone } from "./types";
 
+/** Jenis publikasi, sama untuk semua situs (keputusan mentor). Situs dengan aturan berbeda nanti bisa diberi flag per situs lagi. */
+export const POST_TYPES: PostType[] = ["BERITA", "ARTIKEL"];
+
 export const POST_TYPE_LABEL: Record<PostType, string> = {
   BERITA: "Berita",
   ARTIKEL: "Artikel",
-  EVENT: "Event",
-  PROMO: "Promo",
-  MENU_BARU: "Menu Baru",
 };
 
-/** Batas tag per post (situs dengan `hasPostTags`). */
+/** Batas tag per post (wajib minimal 1). */
 export const POST_TAGS_MAX = 3;
 /** Panjang maksimal label tag. */
 export const TAG_LABEL_MAX = 30;

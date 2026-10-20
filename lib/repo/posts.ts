@@ -10,12 +10,8 @@ function assertSlugFree(site: SiteSlug, post: Post) {
   if (siteContent(site).posts.some((p) => p.slug === post.slug && p.id !== post.id)) throw new Error("SLUG_TAKEN");
 }
 
-/** Situs tanpa tag: kosong. Situs dengan tag: 1–3 tag yang ada, tidak kembar, dan jenisnya sama dengan post. */
+/** 1–3 tag yang ada di situs ini, tidak kembar, dan jenisnya sama dengan post. */
 function assertTagsValid(site: SiteSlug, post: Post) {
-  if (!SITES[site].hasPostTags) {
-    if (post.tags.length) throw new Error("INVALID_TAGS");
-    return;
-  }
   const known = siteContent(site).postTags;
   const ok =
     post.tags.length >= 1 &&

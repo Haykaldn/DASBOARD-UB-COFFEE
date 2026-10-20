@@ -321,11 +321,18 @@ function brewiJaya(today: string): SiteContent {
       menuPdfUrl: "",
     },
     menu,
-    postTags: [],
+    // Tag awal BREWi JAYA (id diawali bj-, slug unik per situs). Jenis & tag sama dengan UB Coffee (permintaan mentor).
+    postTags: [
+      { id: "bj-event", slug: "event", label: "Event", type: "BERITA" },
+      { id: "bj-promo", slug: "promo", label: "Promo", type: "BERITA" },
+      { id: "bj-menu-baru", slug: "menu-baru", label: "Menu Baru", type: "BERITA" },
+      { id: "bj-tips", slug: "tips", label: "Tips Kopi", type: "ARTIKEL" },
+      { id: "bj-cerita", slug: "cerita", label: "Cerita", type: "ARTIKEL" },
+    ],
     posts: [
       {
         id: "bj_p1",
-        type: "MENU_BARU",
+        type: "BERITA",
         title: "Iced Caramel Latte Resmi Hadir di Brewi",
         slug: "iced-caramel-latte-resmi-hadir",
         excerpt: "Perpaduan espresso, susu, dan karamel yang manis dan segar.",
@@ -335,11 +342,11 @@ function brewiJaya(today: string): SiteContent {
         startsAt: "",
         endsAt: "",
         status: "PUBLISHED",
-        tags: [],
+        tags: ["bj-menu-baru"],
       },
       {
         id: "bj_p2",
-        type: "PROMO",
+        type: "BERITA",
         title: "Beli 2 Kopi Susu Brewi, Hemat Rp 8.000",
         slug: "beli-2-kopi-susu-brewi",
         excerpt: "Berlaku di semua outlet BREWi JAYA.",
@@ -349,11 +356,11 @@ function brewiJaya(today: string): SiteContent {
         startsAt: addDays(today, -27),
         endsAt: addDays(today, 3),
         status: "PUBLISHED",
-        tags: [],
+        tags: ["bj-promo"],
       },
       {
         id: "bj_p3",
-        type: "EVENT",
+        type: "BERITA",
         title: "Live Acoustic Setiap Sabtu Malam",
         slug: "live-acoustic-setiap-sabtu-malam",
         excerpt: "Musik akustik setiap Sabtu mulai pukul 19.00.",
@@ -363,7 +370,7 @@ function brewiJaya(today: string): SiteContent {
         startsAt: "",
         endsAt: "",
         status: "PUBLISHED",
-        tags: [],
+        tags: ["bj-event"],
       },
     ],
     gallery: captions.map((caption, i) => ({

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { slugify, todayISO, uid } from "@/lib/format";
-import { POST_TAGS_MAX, POST_TYPE_LABEL, tagsOfType } from "@/lib/posts";
+import { POST_TAGS_MAX, POST_TYPE_LABEL, POST_TYPES, tagsOfType } from "@/lib/posts";
 import type { Post, PostSeo, PostTag, PostType, PublishStatus, SiteConfig } from "@/lib/types";
 import { ConfirmDialog } from "../../Dialog";
 import Icon, { type IconName } from "../../Icon";
@@ -46,7 +46,7 @@ export function PostEditor({
       ? { ...post, seo: post.seo ?? EMPTY_SEO }
       : {
           id: uid("p"),
-          type: site.postTypes[0],
+          type: POST_TYPES[0],
           tags: [],
           title: "",
           slug: "",
@@ -91,7 +91,7 @@ export function PostEditor({
       if (v.excerpt.trim().length < 3) e.excerpt = "Isi teks singkat yang tampil di kartu.";
     } else if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(v.slug)) e.slug = "Hanya huruf kecil, angka, dan tanda hubung.";
     else if (slugTaken(v.slug, v.id)) e.slug = "Slug sudah dipakai post lain.";
-    if (site.hasPostTags && v.tags.length === 0) e.tags = "Pilih minimal 1 tag.";
+    if (v.tags.length === 0) e.tags = "Pilih minimal 1 tag.";
     if (!v.publishedAt) e.publishedAt = "Isi tanggal terbit.";
     if (seo.metaTitle.length > META_TITLE_MAX) e.metaTitle = `Maksimal ${META_TITLE_MAX} karakter.`;
     if (seo.metaDescription.length > META_DESC_MAX) e.metaDescription = `Maksimal ${META_DESC_MAX} karakter.`;
@@ -112,7 +112,6 @@ export function PostEditor({
       slug,
       title: v.title.trim(),
       excerpt: v.excerpt.trim(),
-      tags: site.hasPostTags ? v.tags : [],
       // Periode tayang tidak lagi dipakai; bersihkan sisa data lama saat disimpan.
       startsAt: "",
       endsAt: "",
@@ -236,7 +235,7 @@ export function PostEditor({
                     }}
                     className={inputCls}
                   >
-                    {site.postTypes.map((t) => (
+                    {POST_TYPES.map((t) => (
                       <option key={t} value={t}>
                         {POST_TYPE_LABEL[t]}
                       </option>
@@ -244,25 +243,23 @@ export function PostEditor({
                   </select>
                 )}
               </Field>
-              {site.hasPostTags && (
-                <TagPicker
-                  type={v.type}
-                  options={typeTags}
-                  allTags={allTags}
-                  selected={v.tags}
-                  error={errors.tags}
-                  // Update fungsional: tag baru tiba setelah simpan async, isi form bisa sudah berubah.
-                  onAdd={(tag) =>
-                    setV((cur) =>
-                      cur.type !== tag.type || cur.tags.includes(tag.id) || cur.tags.length >= POST_TAGS_MAX
-                        ? cur
-                        : { ...cur, tags: [...cur.tags, tag.id] },
-                    )
-                  }
-                  onRemove={(id) => setV((cur) => ({ ...cur, tags: cur.tags.filter((x) => x !== id) }))}
-                  createTag={createTag}
-                />
-              )}
+              <TagPicker
+                type={v.type}
+                options={typeTags}
+                allTags={allTags}
+                selected={v.tags}
+                error={errors.tags}
+                // Update fungsional: tag baru tiba setelah simpan async, isi form bisa sudah berubah.
+                onAdd={(tag) =>
+                  setV((cur) =>
+                    cur.type !== tag.type || cur.tags.includes(tag.id) || cur.tags.length >= POST_TAGS_MAX
+                      ? cur
+                      : { ...cur, tags: [...cur.tags, tag.id] },
+                  )
+                }
+                onRemove={(id) => setV((cur) => ({ ...cur, tags: cur.tags.filter((x) => x !== id) }))}
+                createTag={createTag}
+              />
               <fieldset>
                 <legend className="mb-2 text-[11px] font-extrabold tracking-[0.12em] text-ink-3 uppercase">Status</legend>
                 <div className="grid gap-2.5">

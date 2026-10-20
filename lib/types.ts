@@ -94,8 +94,8 @@ export type MenuItem = {
   isFeatured: boolean;
 };
 
-/** UB Coffee: BERITA & ARTIKEL (tetap, tidak bisa ditambah admin). BREWi JAYA: EVENT, PROMO, MENU_BARU. */
-export type PostType = "BERITA" | "ARTIKEL" | "EVENT" | "PROMO" | "MENU_BARU";
+/** Jenis publikasi, sama untuk semua situs (tetap, tidak bisa ditambah admin). Daftar: POST_TYPES di lib/posts.ts. */
+export type PostType = "BERITA" | "ARTIKEL";
 export type PublishStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
 
 export type Post = {
@@ -185,7 +185,7 @@ export type SiteContent = {
   settings: SiteSettings;
   menu: MenuItem[];
   posts: Post[];
-  /** Kosong untuk situs tanpa tag (`SiteConfig.hasPostTags = false`). */
+  /** Tag publikasi situs ini (setiap post wajib 1–3 tag). */
   postTags: PostTag[];
   gallery: GalleryItem[];
   outlets: Outlet[];
@@ -206,10 +206,6 @@ export type SiteConfig = {
   hasGallery: boolean;
   /** CAROUSEL: website menampilkan menu satu per satu tanpa harga (UB Coffee). LIST: daftar dengan harga. */
   menuStyle: "CAROUSEL" | "LIST";
-  /** Tipe post yang dipakai website ini. */
-  postTypes: PostType[];
-  /** true = post wajib punya 1–3 tag (`SiteContent.postTags`), dan admin bisa menambah tag. */
-  hasPostTags: boolean;
   /** true = post punya halaman detail (slug + isi). false = hanya kartu ringkas. */
   hasPostDetail: boolean;
   hasMenuPdf: boolean;
