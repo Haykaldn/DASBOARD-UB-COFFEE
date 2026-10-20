@@ -3,12 +3,13 @@
 import { useState, type ReactNode } from "react";
 import { isHttpsUrl, rupiah, uid } from "@/lib/format";
 import type { MenuCategory, MenuItem, SiteConfig } from "@/lib/types";
+import { useMenu, useSettings } from "../data-hooks";
 import { ConfirmDialog, FormDialog } from "../Dialog";
 import Icon from "../Icon";
 import { PhotoField, UPLOAD_RULE } from "../ImageUploader";
 import PhotoView from "../PhotoView";
 import SortableGrid from "../SortableGrid";
-import { useDirtyGuard, useStore } from "../store";
+import { useDirtyGuard } from "../store";
 import { Button, Checkbox, EmptyState, Field, inputCls, PillFilter, SectionCard, StatusChip } from "../ui";
 
 const CATEGORIES: MenuCategory[] = ["Kopi", "Non-Kopi", "Makanan"];
@@ -24,15 +25,14 @@ export default function MenuSection({
   editing: MenuItem | "new" | null;
   setEditing: (v: MenuItem | "new" | null) => void;
 }) {
-  const { content, setSite, save } = useStore();
-  const items = content[site.slug].menu;
+  const menu = useMenu(site.slug);
+  const items = menu.items;
   const [cat, setCat] = useState<Cat>("all");
   const shown = cat === "all" ? items : items.filter((m) => m.category === cat);
   const carousel = site.menuStyle === "CAROUSEL";
   // Urutan hanya bisa diubah saat semua kategori tampil (urutan carousel di website).
   const sortable = carousel && cat === "all";
 
-  const setMenu = (fn: (m: MenuItem[]) => MenuItem[]) => setSite(site.slug, (c) => ({ ...c, menu: fn(c.menu) }));
 
   const card = (m: MenuItem, i: number, handle?: ReactNode) => (
     <div className="flex h-full min-w-0 flex-col overflow-hidden rounded-[16px] border border-line bg-white">
@@ -75,11 +75,7 @@ export default function MenuSection({
           <Checkbox
             label="Tersedia"
             checked={m.isAvailable}
-            onChange={(v) =>
-              void save(
-                () => setMenu((all) => all.map((x) => (x.id === m.id ? { ...x, isAvailable: v } : x))),
-                `${m.name} ${v ? "tersedia" : "ditandai habis"}. Website diperbarui.`,
-              )
+            onChange={(v) => void menu.setAvailable(m, v)
             }
           />
           <span className="flex gap-2">
@@ -137,7 +133,7 @@ export default function MenuSection({
             items={items}
             getId={(m) => m.id}
             getLabel={(m, i) => `menu ${i + 1} (${m.name})`}
-            onReorder={(next) => save(() => setMenu(() => next), "Urutan menu disimpan. Website diperbarui.")}
+            onReorder={menu.reorder}
             className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4"
             renderItem={card}
           />
@@ -161,12 +157,8 @@ export default function MenuSection({
           site={site}
           item={editing === "new" ? null : editing}
           onClose={() => setEditing(null)}
-          onSave={(v) =>
-            save(() =>
-              setMenu((all) => (all.some((x) => x.id === v.id) ? all.map((x) => (x.id === v.id ? v : x)) : [...all, v])),
-            )
-          }
-          onDelete={(id) => save(() => setMenu((all) => all.filter((x) => x.id !== id)))}
+          onSave={menu.save}
+          onDelete={menu.remove}
         />
       )}
     </SectionCard>
@@ -175,8 +167,8 @@ export default function MenuSection({
 
 /** Link "Lihat Menu Lengkap" di tab Menu website. Disimpan terpisah dari daftar menu. */
 function MenuPdfForm({ site }: { site: SiteConfig }) {
-  const { content, setSite, save } = useStore();
-  const saved = content[site.slug].settings.menuPdfUrl;
+  const { settings, update } = useSettings(site.slug);
+  const saved = settings.menuPdfUrl;
   const [url, setUrl] = useState(saved);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -192,7 +184,7 @@ function MenuPdfForm({ site }: { site: SiteConfig }) {
         if (v && !isHttpsUrl(v)) return setError("Harus diawali https://");
         setError(null);
         setBusy(true);
-        const ok = await save(() => setSite(site.slug, (c) => ({ ...c, settings: { ...c.settings, menuPdfUrl: v } })));
+        const ok = await update({ menuPdfUrl: v });
         setBusy(false);
         if (ok) setUrl(v);
       }}

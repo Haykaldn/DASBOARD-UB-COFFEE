@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import type { SiteConfig, SiteSettings } from "@/lib/types";
-import { useDirtyGuard, useStore } from "../store";
+import { useSettings } from "../data-hooks";
+import { useDirtyGuard } from "../store";
 import { Button, Field, inputCls, SectionCard } from "../ui";
 
 const ABOUT_MAX = 500;
@@ -20,8 +21,7 @@ function validate(v: AboutForm) {
 }
 
 export default function AboutSection({ site }: { site: SiteConfig }) {
-  const { content, setSite, save } = useStore();
-  const saved = content[site.slug].settings;
+  const { settings: saved, update } = useSettings(site.slug);
   const [form, setForm] = useState<AboutForm>({ about: saved.about, instagram: saved.instagram });
   const [errors, setErrors] = useState<ReturnType<typeof validate>>({});
   const [busy, setBusy] = useState(false);
@@ -54,7 +54,7 @@ export default function AboutSection({ site }: { site: SiteConfig }) {
           setErrors(errs);
           if (Object.keys(errs).length) return;
           setBusy(true);
-          const ok = await save(() => setSite(site.slug, (c) => ({ ...c, settings: { ...c.settings, ...v } })));
+          const ok = await update(v);
           setBusy(false);
           if (ok) setForm(v);
         }}

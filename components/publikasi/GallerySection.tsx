@@ -1,25 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import { uid } from "@/lib/format";
 import type { GalleryItem, SiteConfig } from "@/lib/types";
+import { useGallery } from "../data-hooks";
 import { ConfirmDialog, FormDialog } from "../Dialog";
 import Icon from "../Icon";
 import { PhotoField, UPLOAD_RULE, useImageUpload } from "../ImageUploader";
 import PhotoView from "../PhotoView";
 import SortableGrid from "../SortableGrid";
-import { useStore } from "../store";
 import { Button, EmptyState, Field, inputCls, SectionCard } from "../ui";
 
 export default function GallerySection({ site }: { site: SiteConfig }) {
-  const { content, setSite, save } = useStore();
-  const items = content[site.slug].gallery;
+  const gallery = useGallery(site.slug);
+  const items = gallery.items;
   const [editing, setEditing] = useState<GalleryItem | null>(null);
 
-  const setGallery = (fn: (g: GalleryItem[]) => GalleryItem[]) => setSite(site.slug, (c) => ({ ...c, gallery: fn(c.gallery) }));
-
   const upload = useImageUpload(
-    (photos) => void save(() => setGallery((g) => [...g, ...photos.map((photo) => ({ id: uid("g"), photo, caption: "" }))])),
+    (photos) => void gallery.add(photos),
     { multiple: true },
   );
 
@@ -48,7 +45,7 @@ export default function GallerySection({ site }: { site: SiteConfig }) {
           items={items}
           getId={(g) => g.id}
           getLabel={(g, i) => g.caption || `foto ${i + 1}`}
-          onReorder={(next) => save(() => setGallery(() => next), "Urutan galeri disimpan. Website diperbarui.")}
+          onReorder={gallery.reorder}
           className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3"
           renderItem={(g, i, handle) => (
             <figure className="overflow-hidden rounded-xl border border-line bg-white">
@@ -82,8 +79,8 @@ export default function GallerySection({ site }: { site: SiteConfig }) {
           key={editing.id}
           item={editing}
           onClose={() => setEditing(null)}
-          onSave={(v) => save(() => setGallery((g) => g.map((x) => (x.id === v.id ? v : x))))}
-          onDelete={(id) => save(() => setGallery((g) => g.filter((x) => x.id !== id)))}
+          onSave={gallery.update}
+          onDelete={gallery.remove}
         />
       )}
     </SectionCard>

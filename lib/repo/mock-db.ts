@@ -34,3 +34,24 @@ export function delay(ms: number) {
 export function clone<T>(value: T): T {
   return structuredClone(value);
 }
+
+/** Konten satu situs di mock-db (bisa diubah langsung oleh fungsi repo). */
+export function siteContent(site: SiteSlug): SiteContent {
+  return mockDb().content[site];
+}
+
+/** Susun ulang item sesuai daftar id. Daftar harus berisi tepat semua id yang ada. Nanti: update `sortOrder`. */
+export function reorderByIds<T extends { id: string }>(items: T[], ids: string[]): T[] {
+  if (ids.length !== items.length || new Set(ids).size !== ids.length) throw new Error("REORDER_MISMATCH");
+  return ids.map((id) => {
+    const item = items.find((x) => x.id === id);
+    if (!item) throw new Error("REORDER_MISMATCH");
+    return item;
+  });
+}
+
+/** Ganti item dengan id yang sama; error jika tidak ada. */
+export function replaceById<T extends { id: string }>(items: T[], item: T): T[] {
+  if (!items.some((x) => x.id === item.id)) throw new Error("NOT_FOUND");
+  return items.map((x) => (x.id === item.id ? item : x));
+}

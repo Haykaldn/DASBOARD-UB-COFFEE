@@ -4,8 +4,8 @@ import { useState } from "react";
 import { DAY_NAMES, formatPhone, hhmm, isHttpsUrl, normalizePhone, toMinutes, uid } from "@/lib/format";
 import type { DayHours, Outlet, SiteConfig } from "@/lib/types";
 import { ConfirmDialog, FormDialog } from "../Dialog";
+import { useOutlets } from "../data-hooks";
 import Icon from "../Icon";
-import { useStore } from "../store";
 import { Button, Checkbox, EmptyState, Field, inputCls, SectionCard, StatusChip } from "../ui";
 
 /** Ringkas jam buka: hari berurutan dengan jam sama digabung ("Senin – Jumat"). */
@@ -25,11 +25,8 @@ function summarizeHours(hours: DayHours[]): Array<{ days: string; time: string }
 }
 
 export default function OutletsSection({ site }: { site: SiteConfig }) {
-  const { content, setSite, save } = useStore();
-  const outlets = content[site.slug].outlets;
+  const { outlets, save, remove } = useOutlets(site.slug);
   const [editing, setEditing] = useState<Outlet | "new" | null>(null);
-
-  const setOutlets = (fn: (o: Outlet[]) => Outlet[]) => setSite(site.slug, (c) => ({ ...c, outlets: fn(c.outlets) }));
 
   return (
     <SectionCard
@@ -97,10 +94,8 @@ export default function OutletsSection({ site }: { site: SiteConfig }) {
           key={editing === "new" ? "new" : editing.id}
           outlet={editing === "new" ? null : editing}
           onClose={() => setEditing(null)}
-          onSave={(v) =>
-            save(() => setOutlets((all) => (all.some((x) => x.id === v.id) ? all.map((x) => (x.id === v.id ? v : x)) : [...all, v])))
-          }
-          onDelete={(id) => save(() => setOutlets((all) => all.filter((x) => x.id !== id)))}
+          onSave={save}
+          onDelete={remove}
         />
       )}
     </SectionCard>

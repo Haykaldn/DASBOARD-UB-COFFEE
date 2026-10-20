@@ -6,22 +6,20 @@ import { ConfirmDialog } from "../Dialog";
 import Icon from "../Icon";
 import { UPLOAD_RULE, useImageUpload } from "../ImageUploader";
 import PhotoView from "../PhotoView";
+import { useHero } from "../data-hooks";
 import SortableGrid from "../SortableGrid";
-import { useStore } from "../store";
 import { Button, EmptyState, LockedNotice, SectionCard } from "../ui";
 
 export default function HeroSection({ site }: { site: SiteConfig }) {
-  const { content, setSite, save } = useStore();
-  const photos = content[site.slug].hero;
+  const hero = useHero(site.slug);
+  const photos = hero.photos;
   const [toDelete, setToDelete] = useState<{ photo: Photo; index: number } | null>(null);
   const [busy, setBusy] = useState(false);
   const slideshow = site.heroMode === "SLIDESHOW";
 
-  const setHero = (fn: (p: Photo[]) => Photo[]) => setSite(site.slug, (c) => ({ ...c, hero: fn(c.hero) }));
-
   const upload = useImageUpload(
     (added) => {
-      void save(() => setHero((p) => (slideshow ? [...p, ...added] : [added[0]])));
+      void hero.add(added);
     },
     { multiple: slideshow },
   );
@@ -60,7 +58,7 @@ export default function HeroSection({ site }: { site: SiteConfig }) {
               items={photos}
               getId={(p) => p.id}
               getLabel={(p, i) => `foto ${i + 1} (${p.alt})`}
-              onReorder={(next) => save(() => setHero(() => next), "Urutan foto disimpan. Website diperbarui.")}
+              onReorder={hero.reorder}
               className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3"
               renderItem={(p, i, handle) => (
                 <div className="group relative aspect-[16/10] overflow-hidden rounded-xl border border-line bg-page">
@@ -127,7 +125,7 @@ export default function HeroSection({ site }: { site: SiteConfig }) {
         onConfirm={async () => {
           if (!toDelete) return;
           setBusy(true);
-          const ok = await save(() => setHero((p) => p.filter((x) => x.id !== toDelete.photo.id)));
+          const ok = await hero.remove(toDelete.photo.id);
           setBusy(false);
           if (ok) setToDelete(null);
         }}

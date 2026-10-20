@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { formatDateMedium, slugify, todayISO, uid } from "@/lib/format";
 import { POST_TYPE_LABEL, postState } from "@/lib/posts";
 import type { Post, PostSeo, PostType, PublishStatus, SiteConfig } from "@/lib/types";
+import { usePosts } from "../data-hooks";
 import { ConfirmDialog } from "../Dialog";
 import Icon, { type IconName } from "../Icon";
 import { PhotoField, UPLOAD_RULE } from "../ImageUploader";
@@ -30,11 +31,9 @@ const STATUS_OPTIONS: { value: PublishStatus; label: string; hint: string; icon:
 ];
 
 export default function PostsSection({ site }: { site: SiteConfig }) {
-  const { content, setSite, save } = useStore();
-  const posts = [...content[site.slug].posts].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
+  const data = usePosts(site.slug);
+  const posts = [...data.posts].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
   const [editing, setEditing] = useState<Post | "new" | null>(null);
-
-  const setPosts = (fn: (p: Post[]) => Post[]) => setSite(site.slug, (c) => ({ ...c, posts: fn(c.posts) }));
 
   // Form tambah/edit tampil sebagai halaman penuh di dalam tab, menggantikan daftar.
   if (editing) {
@@ -43,12 +42,10 @@ export default function PostsSection({ site }: { site: SiteConfig }) {
         key={editing === "new" ? "new" : editing.id}
         site={site}
         post={editing === "new" ? null : editing}
-        slugTaken={(slug, id) => content[site.slug].posts.some((p) => p.slug === slug && p.id !== id)}
+        slugTaken={data.slugTaken}
         onClose={() => setEditing(null)}
-        onSave={(v) =>
-          save(() => setPosts((all) => (all.some((x) => x.id === v.id) ? all.map((x) => (x.id === v.id ? v : x)) : [...all, v])))
-        }
-        onDelete={(id) => save(() => setPosts((all) => all.filter((x) => x.id !== id)))}
+        onSave={data.save}
+        onDelete={data.remove}
       />
     );
   }

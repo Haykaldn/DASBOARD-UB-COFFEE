@@ -8,14 +8,14 @@ import { ConfirmDialog, FormDialog } from "../Dialog";
 import Icon from "../Icon";
 import { UPLOAD_RULE, useImageUpload } from "../ImageUploader";
 import PhotoView from "../PhotoView";
+import { useMeetingRoomInfo } from "../data-hooks";
 import SortableGrid from "../SortableGrid";
-import { useDirtyGuard, useStore } from "../store";
+import { useDirtyGuard } from "../store";
 import { Button, EmptyState, Field, IconButton, inputCls, SectionCard } from "../ui";
 
 /** Tab "Reservasi" website UB Coffee: informasi meeting room, harga sewa, foto, dan paket. */
 export default function ReservasiSection({ site }: { site: SiteConfig }) {
-  const { content } = useStore();
-  const info = content[site.slug].meetingRoom;
+  const { info } = useMeetingRoomInfo(site.slug);
   if (!info) return null;
 
   return (
@@ -54,12 +54,6 @@ function SubHeading({ title, description, action }: { title: string; description
   );
 }
 
-function useSetMeetingRoom(site: SiteConfig) {
-  const { setSite } = useStore();
-  return (fn: (m: MeetingRoomInfo) => MeetingRoomInfo) =>
-    setSite(site.slug, (c) => (c.meetingRoom ? { ...c, meetingRoom: fn(c.meetingRoom) } : c));
-}
-
 /* ---------- Informasi & harga sewa ---------- */
 
 type InfoValues = {
@@ -81,8 +75,7 @@ const toForm = (m: MeetingRoomInfo): InfoValues => ({
 });
 
 function InfoForm({ site, info }: { site: SiteConfig; info: MeetingRoomInfo }) {
-  const { save } = useStore();
-  const setMeetingRoom = useSetMeetingRoom(site);
+  const { update } = useMeetingRoomInfo(site.slug);
   const saved = toForm(info);
   const [form, setForm] = useState<InfoValues>(saved);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -131,7 +124,7 @@ function InfoForm({ site, info }: { site: SiteConfig; info: MeetingRoomInfo }) {
           orderingNote: form.orderingNote.trim(),
         };
         setBusy(true);
-        const ok = await save(() => setMeetingRoom((m) => ({ ...m, ...fields })));
+        const ok = await update(fields);
         setBusy(false);
         if (ok) setForm(toForm({ ...info, ...fields }));
       }}
@@ -288,13 +281,11 @@ function InfoForm({ site, info }: { site: SiteConfig; info: MeetingRoomInfo }) {
 /* ---------- Foto ruangan ---------- */
 
 function PhotosBlock({ site, photos }: { site: SiteConfig; photos: Photo[] }) {
-  const { save } = useStore();
-  const setMeetingRoom = useSetMeetingRoom(site);
+  const room = useMeetingRoomInfo(site.slug);
   const [toDelete, setToDelete] = useState<{ photo: Photo; index: number } | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const setPhotos = (fn: (p: Photo[]) => Photo[]) => setMeetingRoom((m) => ({ ...m, photos: fn(m.photos) }));
-  const upload = useImageUpload((added) => void save(() => setPhotos((p) => [...p, ...added])), { multiple: true });
+  const upload = useImageUpload((added) => void room.addPhotos(added), { multiple: true });
 
   return (
     <div>
@@ -321,7 +312,7 @@ function PhotosBlock({ site, photos }: { site: SiteConfig; photos: Photo[] }) {
           items={photos}
           getId={(p) => p.id}
           getLabel={(p, i) => `foto ruangan ${i + 1} (${p.alt})`}
-          onReorder={(next) => save(() => setPhotos(() => next), "Urutan foto disimpan. Website diperbarui.")}
+          onReorder={room.reorderPhotos}
           className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3"
           renderItem={(p, i, handle) => (
             <div className="relative aspect-[4/3] overflow-hidden rounded-xl border border-line bg-page">
@@ -360,7 +351,7 @@ function PhotosBlock({ site, photos }: { site: SiteConfig; photos: Photo[] }) {
         onConfirm={async () => {
           if (!toDelete) return;
           setBusy(true);
-          const ok = await save(() => setPhotos((p) => p.filter((x) => x.id !== toDelete.photo.id)));
+          const ok = await room.removePhoto(toDelete.photo.id);
           setBusy(false);
           if (ok) setToDelete(null);
         }}
@@ -372,15 +363,12 @@ function PhotosBlock({ site, photos }: { site: SiteConfig; photos: Photo[] }) {
 /* ---------- Paket meeting ---------- */
 
 function PackagesBlock({ site, info }: { site: SiteConfig; info: MeetingRoomInfo }) {
-  const { save } = useStore();
-  const setMeetingRoom = useSetMeetingRoom(site);
+  const room = useMeetingRoomInfo(site.slug);
   const [editing, setEditing] = useState<MeetingPackage | "new" | null>(null);
   const [note, setNote] = useState(info.packagesNote);
   const [busy, setBusy] = useState(false);
   const noteDirty = note.trim() !== info.packagesNote;
   useDirtyGuard(`paket-note-${site.slug}`, noteDirty);
-
-  const setPackages = (fn: (p: MeetingPackage[]) => MeetingPackage[]) => setMeetingRoom((m) => ({ ...m, packages: fn(m.packages) }));
 
   return (
     <div>
@@ -399,7 +387,7 @@ function PackagesBlock({ site, info }: { site: SiteConfig; info: MeetingRoomInfo
         onSubmit={async (e) => {
           e.preventDefault();
           setBusy(true);
-          await save(() => setMeetingRoom((m) => ({ ...m, packagesNote: note.trim() })));
+          await room.update({ packagesNote: note.trim() });
           setBusy(false);
         }}
         className="mb-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start"
@@ -456,10 +444,8 @@ function PackagesBlock({ site, info }: { site: SiteConfig; info: MeetingRoomInfo
           key={editing === "new" ? "new" : editing.id}
           pkg={editing === "new" ? null : editing}
           onClose={() => setEditing(null)}
-          onSave={(v) =>
-            save(() => setPackages((all) => (all.some((x) => x.id === v.id) ? all.map((x) => (x.id === v.id ? v : x)) : [...all, v])))
-          }
-          onDelete={(id) => save(() => setPackages((all) => all.filter((x) => x.id !== id)))}
+          onSave={room.savePackage}
+          onDelete={room.removePackage}
         />
       )}
     </div>

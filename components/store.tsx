@@ -9,8 +9,8 @@ import { cx } from "./ui";
 
 /**
  * State dashboard di sisi klien: cache data dari lib/repo, toast, dan peringatan perubahan
- * belum disimpan. Komponen membaca dan mengubah data lewat components/data-hooks.tsx.
- * `save()` masih dipakai section Publikasi sampai dipindah ke repo (langkah 2b-2).
+ * belum disimpan. Komponen mengubah data lewat components/data-hooks.tsx, bukan lewat
+ * setter cache di sini.
  */
 
 type Toast = { id: number; tone: "ok" | "error"; text: string };
@@ -25,11 +25,10 @@ type Store = {
    * Mengembalikan false jika gagal (data form tidak hilang).
    */
   run: (task: () => Promise<unknown>, message?: string) => Promise<boolean>;
-  /** Simulasi simpan ke server. Mengembalikan false jika gagal (data form tidak hilang). */
-  save: (apply: () => void, message?: string) => Promise<boolean>;
   /** Hanya untuk components/data-hooks.tsx: perbarui cache dengan hasil repo. */
-  setBookings: (fn: (b: Booking[]) => Booking[]) => void;
-  setSite: (site: SiteSlug, fn: (c: SiteContent) => SiteContent) => void;
+  setBookingsCache: (fn: (b: Booking[]) => Booking[]) => void;
+  /** Hanya untuk components/data-hooks.tsx: perbarui cache dengan hasil repo. */
+  setSiteCache: (site: SiteSlug, fn: (c: SiteContent) => SiteContent) => void;
   toast: (text: string, tone?: Toast["tone"]) => void;
   setDirty: (key: string, dirty: boolean) => void;
   /** true jika boleh pindah halaman (tidak ada perubahan belum disimpan, atau user setuju). */
@@ -118,21 +117,7 @@ export function DashboardProvider({ user, children }: { user: SessionUser; child
     [toast],
   );
 
-  const save = useCallback(
-    async (apply: () => void, message = SAVED_MESSAGE) => {
-      await new Promise((r) => setTimeout(r, 450));
-      if (typeof navigator !== "undefined" && !navigator.onLine) {
-        toast(FAILED_MESSAGE, "error");
-        return false;
-      }
-      apply();
-      toast(message);
-      return true;
-    },
-    [toast],
-  );
-
-  const setSite = useCallback((site: SiteSlug, fn: (c: SiteContent) => SiteContent) => {
+  const setSiteCache = useCallback((site: SiteSlug, fn: (c: SiteContent) => SiteContent) => {
     setContent((c) => ({ ...c, [site]: fn(c[site]) }));
   }, []);
 
@@ -155,14 +140,13 @@ export function DashboardProvider({ user, children }: { user: SessionUser; child
       bookings,
       content,
       run,
-      save,
-      setBookings: setBookingsState,
-      setSite,
+      setBookingsCache: setBookingsState,
+      setSiteCache,
       toast,
       setDirty,
       confirmLeave,
     }),
-    [user, ready, bookings, content, run, save, setSite, toast, setDirty, confirmLeave],
+    [user, ready, bookings, content, run, setSiteCache, toast, setDirty, confirmLeave],
   );
 
   return (
