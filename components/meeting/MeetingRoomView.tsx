@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { canTransition, ROOMS } from "@/lib/booking";
-import { bookingCode, todayISO, uid } from "@/lib/format";
+import { ROOMS } from "@/lib/booking";
+import { todayISO } from "@/lib/format";
 import type { Booking, BookingStatus, RoomId } from "@/lib/types";
+import { useBookings } from "../data-hooks";
 import Icon from "../Icon";
 import { useStore } from "../store";
 import { Button, EmptyState, inputCls, SkeletonPage, StatCard, StatGrid } from "../ui";
@@ -39,7 +40,8 @@ type Modal =
   | null;
 
 export default function MeetingRoomView() {
-  const { ready, bookings, setBookings, content, save, user, toast } = useStore();
+  const { ready, content } = useStore();
+  const { bookings, confirm, reject, cancel, mark, createManual } = useBookings();
   const today = todayISO();
   const outlet = content["ub-coffee"].outlets[0];
 
@@ -89,30 +91,6 @@ export default function MeetingRoomView() {
   }, [searched, filter, today]);
 
   const find = (id: string) => bookings.find((b) => b.id === id) ?? null;
-  const by = `${user.name}`;
-
-  /** Ubah status lewat state machine; transisi tidak sah ditolak. */
-  function transition(id: string, to: BookingStatus, label: string, note = "") {
-    const b = find(id);
-    if (!b || !canTransition(b.status, to)) {
-      toast("Status booking sudah berubah. Muat ulang halaman.", "error");
-      return Promise.resolve(false);
-    }
-    return save(() =>
-      setBookings((all) =>
-        all.map((x) =>
-          x.id === id
-            ? {
-                ...x,
-                status: to,
-                adminNote: note || x.adminNote,
-                history: [...x.history, { at: new Date().toISOString(), label, by, note: note || undefined }],
-              }
-            : x,
-        ),
-      ),
-    );
-  }
 
   if (!ready) return <SkeletonPage />;
 
@@ -260,7 +238,7 @@ export default function MeetingRoomView() {
         <ConfirmBookingDialog
           booking={current}
           onClose={() => setModal(null)}
-          onSubmit={(note) => transition(modal.id, "CONFIRMED", "Dikonfirmasi", note)}
+          onSubmit={(note) => confirm(modal.id, note)}
         />
       )}
       {modal?.kind === "reject" && (
@@ -268,7 +246,7 @@ export default function MeetingRoomView() {
           mode="reject"
           booking={current}
           onClose={() => setModal(null)}
-          onSubmit={(reason) => transition(modal.id, "REJECTED", "Ditolak", reason)}
+          onSubmit={(reason) => reject(modal.id, reason)}
         />
       )}
       {modal?.kind === "cancel" && (
@@ -276,9 +254,7 @@ export default function MeetingRoomView() {
           mode="cancel"
           booking={current}
           onClose={() => setModal(null)}
-          onSubmit={(reason) =>
-            transition(modal.id, "CANCELLED", current?.isInternal ? "Blokir dihapus" : "Dibatalkan", reason)
-          }
+          onSubmit={(reason) => cancel(modal.id, reason)}
         />
       )}
       {modal?.kind === "detail" && (
@@ -289,7 +265,7 @@ export default function MeetingRoomView() {
           onReject={() => setModal({ kind: "reject", id: modal.id })}
           onCancel={() => setModal({ kind: "cancel", id: modal.id })}
           onMark={async (to) => {
-            await transition(modal.id, to, to === "COMPLETED" ? "Ditandai selesai" : "Ditandai tidak hadir");
+            await mark(modal.id, to);
           }}
         />
       )}
@@ -301,24 +277,7 @@ export default function MeetingRoomView() {
         outlet={outlet}
         onClose={() => setModal(null)}
         onSubmit={async (v) => {
-          const ok = await save(() =>
-            setBookings((all) => [
-              ...all,
-              {
-                id: uid("bk"),
-                code: bookingCode(v.date),
-                ...v,
-                email: "",
-                isInternal: false,
-                source: "ADMIN",
-                status: "CONFIRMED",
-                adminNote: "",
-                createdAt: new Date().toISOString(),
-                history: [{ at: new Date().toISOString(), label: "Booking diinput admin (langsung dikonfirmasi)", by }],
-              },
-            ]),
-            `Booking ${v.name} disimpan dan dikonfirmasi.`,
-          );
+          const ok = await createManual(v);
           if (ok) setCalDate(v.date);
           return ok;
         }}

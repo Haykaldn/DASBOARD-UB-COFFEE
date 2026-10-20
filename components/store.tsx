@@ -2,15 +2,15 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { todayISO } from "@/lib/format";
-import { mockBookings, mockContent } from "@/lib/mock-data";
+import { getSiteContent, listBookings, resetMockDb } from "@/lib/repo";
 import type { Booking, SessionUser, SiteContent, SiteSlug } from "@/lib/types";
 import Icon from "./Icon";
 import { cx } from "./ui";
 
 /**
- * State dashboard di sisi klien. Selama CMS belum punya database, data diambil dari
- * lib/mock-data.ts dan setiap "simpan" disimulasikan. Saat milestone DB selesai,
- * `save()` diganti pemanggilan server action (features/*) + revalidate website.
+ * State dashboard di sisi klien: cache data dari lib/repo, toast, dan peringatan perubahan
+ * belum disimpan. Komponen membaca dan mengubah data lewat components/data-hooks.tsx.
+ * `save()` masih dipakai section Publikasi sampai dipindah ke repo (langkah 2b-2).
  */
 
 type Toast = { id: number; tone: "ok" | "error"; text: string };
@@ -20,8 +20,14 @@ type Store = {
   ready: boolean;
   bookings: Booking[];
   content: Record<SiteSlug, SiteContent>;
+  /**
+   * Jalankan pemanggilan repo (yang juga memperbarui cache), lalu tampilkan toast.
+   * Mengembalikan false jika gagal (data form tidak hilang).
+   */
+  run: (task: () => Promise<unknown>, message?: string) => Promise<boolean>;
   /** Simulasi simpan ke server. Mengembalikan false jika gagal (data form tidak hilang). */
   save: (apply: () => void, message?: string) => Promise<boolean>;
+  /** Hanya untuk components/data-hooks.tsx: perbarui cache dengan hasil repo. */
   setBookings: (fn: (b: Booking[]) => Booking[]) => void;
   setSite: (site: SiteSlug, fn: (c: SiteContent) => SiteContent) => void;
   toast: (text: string, tone?: Toast["tone"]) => void;
@@ -39,22 +45,45 @@ export function useStore() {
 }
 
 export const SAVED_MESSAGE = "Perubahan disimpan. Website diperbarui.";
+const FAILED_MESSAGE = "Gagal menyimpan. Periksa koneksi lalu coba lagi.";
 const LEAVE_MESSAGE = "Ada perubahan yang belum disimpan. Tinggalkan halaman ini?";
+
+const EMPTY_CONTENT: SiteContent = {
+  hero: [],
+  settings: { about: "", instagram: "", menuPdfUrl: "" },
+  menu: [],
+  posts: [],
+  gallery: [],
+  outlets: [],
+  meetingRoom: null,
+};
 
 export function DashboardProvider({ user, children }: { user: SessionUser; children: ReactNode }) {
   const [today] = useState(todayISO);
-  const [bookings, setBookingsState] = useState<Booking[]>(() => mockBookings(today));
-  const [content, setContent] = useState<Record<SiteSlug, SiteContent>>(() => mockContent(today));
+  const [bookings, setBookingsState] = useState<Booking[]>([]);
+  const [content, setContent] = useState<Record<SiteSlug, SiteContent>>({
+    "ub-coffee": EMPTY_CONTENT,
+    "brewi-jaya": EMPTY_CONTENT,
+  });
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [ready, setReady] = useState(false);
   const dirty = useRef(new Set<string>());
   const toastId = useRef(0);
 
-  // Simulasi waktu muat data pertama (menampilkan skeleton).
+  // Muat data pertama dari repo (selama itu skeleton tampil).
   useEffect(() => {
-    const t = setTimeout(() => setReady(true), 350);
-    return () => clearTimeout(t);
-  }, []);
+    let active = true;
+    resetMockDb(today); // hanya selama mock; dihapus saat diganti Prisma
+    void Promise.all([listBookings(), getSiteContent("ub-coffee"), getSiteContent("brewi-jaya")]).then(([b, ub, bj]) => {
+      if (!active) return;
+      setBookingsState(b);
+      setContent({ "ub-coffee": ub, "brewi-jaya": bj });
+      setReady(true);
+    });
+    return () => {
+      active = false;
+    };
+  }, [today]);
 
   useEffect(() => {
     const onBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -70,11 +99,30 @@ export function DashboardProvider({ user, children }: { user: SessionUser; child
     setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 4000);
   }, []);
 
+  const run = useCallback(
+    async (task: () => Promise<unknown>, message = SAVED_MESSAGE) => {
+      // Cek koneksi di sini (bukan di repo): repo nanti berjalan di server.
+      if (typeof navigator !== "undefined" && !navigator.onLine) {
+        toast(FAILED_MESSAGE, "error");
+        return false;
+      }
+      try {
+        await task();
+      } catch {
+        toast(FAILED_MESSAGE, "error");
+        return false;
+      }
+      toast(message);
+      return true;
+    },
+    [toast],
+  );
+
   const save = useCallback(
     async (apply: () => void, message = SAVED_MESSAGE) => {
       await new Promise((r) => setTimeout(r, 450));
       if (typeof navigator !== "undefined" && !navigator.onLine) {
-        toast("Gagal menyimpan. Periksa koneksi lalu coba lagi.", "error");
+        toast(FAILED_MESSAGE, "error");
         return false;
       }
       apply();
@@ -106,6 +154,7 @@ export function DashboardProvider({ user, children }: { user: SessionUser; child
       ready,
       bookings,
       content,
+      run,
       save,
       setBookings: setBookingsState,
       setSite,
@@ -113,7 +162,7 @@ export function DashboardProvider({ user, children }: { user: SessionUser; child
       setDirty,
       confirmLeave,
     }),
-    [user, ready, bookings, content, save, setSite, toast, setDirty, confirmLeave],
+    [user, ready, bookings, content, run, save, setSite, toast, setDirty, confirmLeave],
   );
 
   return (
