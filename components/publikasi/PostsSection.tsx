@@ -2,23 +2,15 @@
 
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { formatDateMedium, slugify, todayISO, uid } from "@/lib/format";
+import { POST_TYPE_LABEL, postState } from "@/lib/posts";
 import type { Post, PostSeo, PostType, PublishStatus, SiteConfig } from "@/lib/types";
 import { ConfirmDialog } from "../Dialog";
 import Icon, { type IconName } from "../Icon";
 import { PhotoField, UPLOAD_RULE } from "../ImageUploader";
 import PhotoView from "../PhotoView";
 import { useDirtyGuard, useStore } from "../store";
-import { Button, cx, EmptyState, Field, inputCls, SectionCard, StatusChip, type Tone } from "../ui";
+import { Button, cx, EmptyState, Field, inputCls, SectionCard, StatusChip } from "../ui";
 import MarkdownEditor from "./MarkdownEditor";
-
-export const POST_TYPE_LABEL: Record<PostType, string> = {
-  BERITA: "Berita",
-  ARTIKEL: "Artikel",
-  EVENT: "Event",
-  PROMO: "Promo",
-  MENU_BARU: "Menu Baru",
-  INFO: "Info",
-};
 
 /** Pilihan tag untuk tipe post di situs ini; kosong = tipe tersebut tidak memakai tag. */
 function tagsFor(site: SiteConfig, type: PostType) {
@@ -36,14 +28,6 @@ const STATUS_OPTIONS: { value: PublishStatus; label: string; hint: string; icon:
   { value: "PUBLISHED", label: "Terbit", hint: "Siap dibaca publik", icon: "checkCircle" },
   { value: "ARCHIVED", label: "Arsip", hint: "Tidak ditampilkan", icon: "archive" },
 ];
-
-export function postState(p: Post, today = todayISO()): { label: string; tone: Tone; live: boolean } {
-  if (p.status === "DRAFT") return { label: "Draft", tone: "mute", live: false };
-  if (p.status === "ARCHIVED") return { label: "Arsip", tone: "mute", live: false };
-  if (p.publishedAt > today || (p.startsAt && p.startsAt > today)) return { label: "Terjadwal", tone: "warn", live: false };
-  if (p.endsAt && p.endsAt < today) return { label: "Berakhir", tone: "mute", live: false };
-  return { label: "Tayang", tone: "ok", live: true };
-}
 
 export default function PostsSection({ site }: { site: SiteConfig }) {
   const { content, setSite, save } = useStore();

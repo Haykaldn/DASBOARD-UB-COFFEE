@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useState, type ReactNode } from "react";
+import { postState } from "@/lib/posts";
 import { SITES } from "@/lib/sites";
 import type { MenuItem, SectionKey, SiteContent, SiteSlug } from "@/lib/types";
 import Icon, { type IconName } from "../Icon";
@@ -11,7 +12,7 @@ import GallerySection from "./GallerySection";
 import HeroSection from "./HeroSection";
 import MenuSection from "./MenuSection";
 import OutletsSection from "./OutletsSection";
-import PostsSection, { postState } from "./PostsSection";
+import PostsSection from "./PostsSection";
 import ReservasiSection from "./ReservasiSection";
 
 type LandingKey = Exclude<SectionKey, "event">;

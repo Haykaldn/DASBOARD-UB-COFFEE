@@ -14,6 +14,8 @@ export type SessionUser = {
 /** Tempat yang bisa dibooking di UB Coffee. Daftar & kapasitas: ROOMS di lib/booking.ts. */
 export type RoomId = "mr1" | "mr2" | "open";
 
+export type Room = { id: RoomId; name: string; kind: "Ruang meeting" | "Open space"; capacity: number };
+
 export type BookingStatus = "PENDING" | "CONFIRMED" | "REJECTED" | "CANCELLED" | "COMPLETED" | "NO_SHOW";
 
 export type BookingHistory = {
@@ -46,6 +48,23 @@ export type Booking = {
   createdAt: string;
   history: BookingHistory[];
 };
+
+/** Isi form "Booking jadwal" (reservasi langsung yang diinput admin). */
+export type ManualBookingInput = {
+  roomId: RoomId;
+  name: string;
+  phone: string; // E.164 tanpa "+", atau "" jika tidak diisi
+  organization: string;
+  purpose: string;
+  date: string;
+  start: string;
+  end: string;
+  pax: number;
+  note: string;
+};
+
+/** Nada warna label status (StatusChip). */
+export type Tone = "warn" | "ok" | "mute" | "info" | "danger";
 
 /** Foto. `src` null = belum ada file (ditampilkan sebagai placeholder berwarna). */
 export type Photo = {

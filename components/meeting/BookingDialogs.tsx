@@ -15,7 +15,7 @@ import {
   waLink,
 } from "@/lib/booking";
 import { formatDateLong, formatDateTime, formatPhone, hhmm, normalizePhone, todayISO, toMinutes } from "@/lib/format";
-import type { Booking, Outlet, RoomId } from "@/lib/types";
+import type { Booking, ManualBookingInput, Outlet, RoomId } from "@/lib/types";
 import { FormDialog } from "../Dialog";
 import Icon from "../Icon";
 import { Button, cx, Field, inputCls, StatusChip } from "../ui";
@@ -351,19 +351,6 @@ export function DetailDialog({
 }
 
 /* ---------------- Booking jadwal (input admin) ---------------- */
-
-export type ManualBookingInput = {
-  roomId: RoomId;
-  name: string;
-  phone: string; // E.164 tanpa "+", atau "" jika tidak diisi
-  organization: string;
-  purpose: string;
-  date: string;
-  start: string;
-  end: string;
-  pax: number;
-  note: string;
-};
 
 /**
  * Admin memasukkan booking atas nama pemesan yang reservasi langsung ke UB Coffee

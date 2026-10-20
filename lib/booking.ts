@@ -1,7 +1,5 @@
 import { formatDateLong, hhmm, todayISO, nowHHMM, toMinutes, weekdayIndex } from "./format";
-import type { Booking, BookingStatus, Outlet, RoomId } from "./types";
-
-export type Room = { id: RoomId; name: string; kind: "Ruang meeting" | "Open space"; capacity: number };
+import type { Booking, BookingStatus, Outlet, Room, RoomId } from "./types";
 
 /** 2 ruang meeting + 1 open space. Nama & kapasitas disesuaikan dengan kondisi UB Coffee. */
 export const ROOMS: Room[] = [

@@ -1,7 +1,10 @@
 "use client";
 
 import { useId, type ButtonHTMLAttributes, type ReactNode } from "react";
+import type { Tone } from "@/lib/types";
 import Icon, { type IconName } from "./Icon";
+
+export type { Tone };
 
 const cx = (...c: Array<string | false | null | undefined>) => c.filter(Boolean).join(" ");
 export { cx };
@@ -149,8 +152,6 @@ export function Checkbox({
 }
 
 /* ---------- Status ---------- */
-
-export type Tone = "warn" | "ok" | "mute" | "info" | "danger";
 
 const TONE: Record<Tone, string> = {
   warn: "border-amber-300 bg-amber-50 text-amber-700",
