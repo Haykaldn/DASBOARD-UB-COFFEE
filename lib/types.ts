@@ -94,7 +94,8 @@ export type MenuItem = {
   isFeatured: boolean;
 };
 
-export type PostType = "BERITA" | "ARTIKEL" | "EVENT" | "PROMO" | "MENU_BARU" | "INFO";
+/** UB Coffee: BERITA & ARTIKEL (tetap, tidak bisa ditambah admin). BREWi JAYA: EVENT, PROMO, MENU_BARU. */
+export type PostType = "BERITA" | "ARTIKEL" | "EVENT" | "PROMO" | "MENU_BARU";
 export type PublishStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
 
 export type Post = {
@@ -109,13 +110,20 @@ export type Post = {
   startsAt: string; // YYYY-MM-DD atau ""
   endsAt: string;
   status: PublishStatus;
-  /** Nilai tag dari `SiteConfig.postTags[type]`, mis. "event". Kosong = tanpa tag. */
-  tag?: string;
+  /** id `PostTag` (maks. 3, jenisnya sama dengan `type`). Kosong untuk situs tanpa tag. API mengirim slug-nya. */
+  tags: string[];
   /** Pengaturan SEO halaman detail; kosong = website memakai judul & ringkasan. */
   seo?: PostSeo;
 };
 
-export type PostTag = { value: string; label: string };
+/** Tag publikasi. Data per situs: admin bisa menambah tag. Setiap tag terikat pada satu jenis post. */
+export type PostTag = {
+  id: string;
+  /** Unik per situs; dipakai filter tag di website. */
+  slug: string;
+  label: string;
+  type: PostType;
+};
 
 export type PostSeo = {
   metaTitle: string;
@@ -177,6 +185,8 @@ export type SiteContent = {
   settings: SiteSettings;
   menu: MenuItem[];
   posts: Post[];
+  /** Kosong untuk situs tanpa tag (`SiteConfig.hasPostTags = false`). */
+  postTags: PostTag[];
   gallery: GalleryItem[];
   outlets: Outlet[];
   /** null = situs tidak punya tab Reservasi meeting room. */
@@ -198,8 +208,8 @@ export type SiteConfig = {
   menuStyle: "CAROUSEL" | "LIST";
   /** Tipe post yang dipakai website ini. */
   postTypes: PostType[];
-  /** Pilihan tag per tipe post, sama dengan label tag di kartu website. Tipe tanpa daftar tidak punya tag. */
-  postTags?: Partial<Record<PostType, PostTag[]>>;
+  /** true = post wajib punya 1–3 tag (`SiteContent.postTags`), dan admin bisa menambah tag. */
+  hasPostTags: boolean;
   /** true = post punya halaman detail (slug + isi). false = hanya kartu ringkas. */
   hasPostDetail: boolean;
   hasMenuPdf: boolean;

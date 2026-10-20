@@ -16,6 +16,8 @@ import type {
   Outlet,
   Photo,
   Post,
+  PostTag,
+  PostType,
   SiteContent,
   SiteSettings,
   SiteSlug,
@@ -130,6 +132,17 @@ export function usePosts(site: SiteSlug) {
   const setPosts = (fn: (p: Post[]) => Post[]) => setCache((x) => ({ ...x, posts: fn(x.posts) }));
   return {
     posts: c.posts,
+    tags: c.postTags,
+    /** Tag baru langsung tersimpan (meski post-nya belum disimpan). Mengembalikan tag baru, atau null jika gagal. */
+    createTag: async (label: string, type: PostType): Promise<PostTag | null> => {
+      const out: { tag: PostTag | null } = { tag: null };
+      const ok = await run(async () => {
+        const tag = await repo.createPostTag(site, { label, type });
+        out.tag = tag;
+        setCache((x) => ({ ...x, postTags: [...x.postTags, tag] }));
+      }, `Tag “${label.trim()}” ditambahkan.`);
+      return ok ? out.tag : null;
+    },
     /** Pesan cepat di form; repo memeriksa lagi saat menyimpan. */
     slugTaken: (slug: string, id: string) => c.posts.some((p) => p.slug === slug && p.id !== id),
     save: (post: Post) =>

@@ -4,7 +4,7 @@
  * Saat milestone DB selesai, file ini diganti oleh query Prisma (features/*).
  */
 import { addDays } from "./format";
-import type { Booking, DayHours, MeetingRoomInfo, MenuItem, Outlet, Photo, Post, SiteContent, SiteSlug } from "./types";
+import type { Booking, DayHours, MeetingRoomInfo, MenuItem, Outlet, Photo, Post, PostTag, SiteContent, SiteSlug } from "./types";
 
 const hero = (file: string, alt: string): Photo => ({ id: `hero_${file}`, src: `/hero/${file}.webp`, hue: 30, alt });
 const menuPhoto = (id: string, alt: string): Photo => ({ id: `mp_${id}`, src: `/menu/${id}.webp`, hue: 30, alt });
@@ -48,11 +48,21 @@ function ubCoffee(today: string): SiteContent {
     isFeatured: false,
   });
 
+  // Tag awal; id & slug sama dengan kategori berita di landing page (event, kolaborasi, tips, cerita).
+  const postTags: PostTag[] = [
+    { id: "cat-event", slug: "event", label: "Event", type: "BERITA" },
+    { id: "cat-promo", slug: "promo", label: "Promo", type: "BERITA" },
+    { id: "cat-info", slug: "info", label: "Info", type: "BERITA" },
+    { id: "cat-kolaborasi", slug: "kolaborasi", label: "Kolaborasi", type: "BERITA" },
+    { id: "cat-tips", slug: "tips", label: "Tips Kopi", type: "ARTIKEL" },
+    { id: "cat-cerita", slug: "cerita", label: "Cerita", type: "ARTIKEL" },
+  ];
+
   const posts: Post[] = [
     {
       id: "ub_p1",
       type: "BERITA",
-      tag: "event",
+      tags: ["cat-event"],
       title: "Live Akustik Jumat Malam",
       slug: "live-akustik-jumat-malam",
       excerpt: "Tutup minggu dengan musik akustik dari musisi kampus. Mulai pukul 19.00, gratis untuk semua pengunjung.",
@@ -66,7 +76,7 @@ function ubCoffee(today: string): SiteContent {
     {
       id: "ub_p2",
       type: "BERITA",
-      tag: "promo",
+      tags: ["cat-promo"],
       title: "Diskon 15% Civitas UB",
       slug: "diskon-15-civitas-ub",
       excerpt: "Tunjukkan kartu identitas UB untuk potongan 15% semua minuman, Senin – Kamis.",
@@ -80,7 +90,7 @@ function ubCoffee(today: string): SiteContent {
     {
       id: "ub_p3",
       type: "BERITA",
-      tag: "event",
+      tags: ["cat-event"],
       title: "Kelas Seduh Manual",
       slug: "kelas-seduh-manual",
       excerpt: "Belajar dasar V60 bersama barista UB Coffee. Kuota 12 orang.",
@@ -94,7 +104,7 @@ function ubCoffee(today: string): SiteContent {
     {
       id: "ub_p5",
       type: "BERITA",
-      tag: "info",
+      tags: ["cat-info"],
       title: "Jam Buka Libur Nasional",
       slug: "jam-buka-libur-nasional",
       excerpt: "Saat libur nasional, UB Coffee buka pukul 12.00 – 20.00.",
@@ -108,7 +118,7 @@ function ubCoffee(today: string): SiteContent {
     {
       id: "ub_p4",
       type: "BERITA",
-      tag: "info",
+      tags: ["cat-info"],
       title: "Matcha Latte Segera Hadir",
       slug: "matcha-latte-segera-hadir",
       excerpt: "Menu baru untuk pencinta teh hijau.",
@@ -238,6 +248,7 @@ function ubCoffee(today: string): SiteContent {
     },
     menu,
     posts,
+    postTags,
     gallery: [],
     outlets,
     meetingRoom,
@@ -310,6 +321,7 @@ function brewiJaya(today: string): SiteContent {
       menuPdfUrl: "",
     },
     menu,
+    postTags: [],
     posts: [
       {
         id: "bj_p1",
@@ -323,6 +335,7 @@ function brewiJaya(today: string): SiteContent {
         startsAt: "",
         endsAt: "",
         status: "PUBLISHED",
+        tags: [],
       },
       {
         id: "bj_p2",
@@ -336,6 +349,7 @@ function brewiJaya(today: string): SiteContent {
         startsAt: addDays(today, -27),
         endsAt: addDays(today, 3),
         status: "PUBLISHED",
+        tags: [],
       },
       {
         id: "bj_p3",
@@ -349,6 +363,7 @@ function brewiJaya(today: string): SiteContent {
         startsAt: "",
         endsAt: "",
         status: "PUBLISHED",
+        tags: [],
       },
     ],
     gallery: captions.map((caption, i) => ({

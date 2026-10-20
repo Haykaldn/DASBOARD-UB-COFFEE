@@ -11,6 +11,7 @@ export * from "./hero";
 export * from "./meeting-room-info";
 export * from "./menu";
 export * from "./outlets";
+export * from "./post-tags";
 export * from "./posts";
 export * from "./settings";
 export { resetMockDb } from "./mock-db";

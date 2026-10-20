@@ -1,5 +1,5 @@
 import { todayISO } from "./format";
-import type { Post, PostType, Tone } from "./types";
+import type { Post, PostTag, PostType, Tone } from "./types";
 
 export const POST_TYPE_LABEL: Record<PostType, string> = {
   BERITA: "Berita",
@@ -7,8 +7,22 @@ export const POST_TYPE_LABEL: Record<PostType, string> = {
   EVENT: "Event",
   PROMO: "Promo",
   MENU_BARU: "Menu Baru",
-  INFO: "Info",
 };
+
+/** Batas tag per post (situs dengan `hasPostTags`). */
+export const POST_TAGS_MAX = 3;
+/** Panjang maksimal label tag. */
+export const TAG_LABEL_MAX = 30;
+
+/** Tag yang boleh dipakai post berjenis `type`. */
+export function tagsOfType(tags: PostTag[], type: PostType): PostTag[] {
+  return tags.filter((t) => t.type === type);
+}
+
+/** Label tag sesuai urutan `ids`; id yang tidak dikenal dilewati. */
+export function tagLabels(tags: PostTag[], ids: string[]): string[] {
+  return ids.flatMap((id) => tags.find((t) => t.id === id)?.label ?? []);
+}
 
 /** Status tayang post pada tanggal `today`: Draft, Arsip, Terjadwal, Berakhir, atau Tayang. */
 export function postState(p: Post, today = todayISO()): { label: string; tone: Tone; live: boolean } {

@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { formatDateMedium, slugify, todayISO, uid } from "@/lib/format";
-import { POST_TYPE_LABEL, postState } from "@/lib/posts";
-import type { Post, PostSeo, PostType, PublishStatus, SiteConfig } from "@/lib/types";
+import { POST_TAGS_MAX, POST_TYPE_LABEL, postState, TAG_LABEL_MAX, tagLabels, tagsOfType } from "@/lib/posts";
+import type { Post, PostSeo, PostTag, PostType, PublishStatus, SiteConfig } from "@/lib/types";
 import { usePosts } from "../data-hooks";
 import { ConfirmDialog } from "../Dialog";
 import Icon, { type IconName } from "../Icon";
@@ -13,15 +13,10 @@ import { useDirtyGuard, useStore } from "../store";
 import { Button, cx, EmptyState, Field, inputCls, SectionCard, StatusChip } from "../ui";
 import MarkdownEditor from "./MarkdownEditor";
 
-/** Pilihan tag untuk tipe post di situs ini; kosong = tipe tersebut tidak memakai tag. */
-function tagsFor(site: SiteConfig, type: PostType) {
-  return site.postTags?.[type] ?? [];
-}
-
-/** Label kartu: tipe, ditambah tag bila ada (mis. "Berita · Event"). */
-function postLabel(site: SiteConfig, p: Post) {
-  const tag = tagsFor(site, p.type).find((t) => t.value === p.tag);
-  return tag ? `${POST_TYPE_LABEL[p.type]} · ${tag.label}` : POST_TYPE_LABEL[p.type];
+/** Label kartu: tipe, ditambah tag bila ada (mis. "Berita · Event, Promo"). */
+function postLabel(tags: PostTag[], p: Post) {
+  const labels = tagLabels(tags, p.tags);
+  return labels.length ? `${POST_TYPE_LABEL[p.type]} · ${labels.join(", ")}` : POST_TYPE_LABEL[p.type];
 }
 
 const STATUS_OPTIONS: { value: PublishStatus; label: string; hint: string; icon: IconName }[] = [
@@ -42,6 +37,8 @@ export default function PostsSection({ site }: { site: SiteConfig }) {
         key={editing === "new" ? "new" : editing.id}
         site={site}
         post={editing === "new" ? null : editing}
+        allTags={data.tags}
+        createTag={data.createTag}
         slugTaken={data.slugTaken}
         onClose={() => setEditing(null)}
         onSave={data.save}
@@ -84,7 +81,7 @@ export default function PostsSection({ site }: { site: SiteConfig }) {
                   <PhotoView photo={p.cover} label={`Belum ada poster ${p.title}`} />
                   <div className="absolute inset-x-2 top-2 flex flex-wrap justify-between gap-1.5">
                     <StatusChip tone="info" className="bg-white/95 text-ink">
-                      {postLabel(site, p)}
+                      {postLabel(data.tags, p)}
                     </StatusChip>
                     <StatusChip tone={st.tone}>{st.label}</StatusChip>
                   </div>
@@ -119,6 +116,8 @@ const EMPTY_SEO: PostSeo = { metaTitle: "", metaDescription: "", tags: [] };
 function PostEditor({
   site,
   post,
+  allTags,
+  createTag,
   slugTaken,
   onClose,
   onSave,
@@ -126,6 +125,8 @@ function PostEditor({
 }: {
   site: SiteConfig;
   post: Post | null;
+  allTags: PostTag[];
+  createTag: (label: string, type: PostType) => Promise<PostTag | null>;
   slugTaken: (slug: string, id: string) => boolean;
   onClose: () => void;
   onSave: (v: Post) => Promise<boolean>;
@@ -138,7 +139,7 @@ function PostEditor({
       : {
           id: uid("p"),
           type: site.postTypes[0],
-          tag: tagsFor(site, site.postTypes[0])[0]?.value,
+          tags: [],
           title: "",
           slug: "",
           excerpt: "",
@@ -153,7 +154,7 @@ function PostEditor({
   );
   const [v, setV] = useState<Post>(initial);
   const seo = v.seo ?? EMPTY_SEO;
-  const tags = tagsFor(site, v.type);
+  const typeTags = tagsOfType(allTags, v.type);
   const setSeo = (patch: Partial<PostSeo>) => setV({ ...v, seo: { ...seo, ...patch } });
   const [slugTouched, setSlugTouched] = useState(!!post);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -182,7 +183,7 @@ function PostEditor({
       if (v.excerpt.trim().length < 3) e.excerpt = "Isi teks singkat yang tampil di kartu.";
     } else if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(v.slug)) e.slug = "Hanya huruf kecil, angka, dan tanda hubung.";
     else if (slugTaken(v.slug, v.id)) e.slug = "Slug sudah dipakai post lain.";
-    if (tags.length && !tags.some((t) => t.value === v.tag)) e.tag = "Pilih tag.";
+    if (site.hasPostTags && v.tags.length === 0) e.tags = "Pilih minimal 1 tag.";
     if (!v.publishedAt) e.publishedAt = "Isi tanggal terbit.";
     if (seo.metaTitle.length > META_TITLE_MAX) e.metaTitle = `Maksimal ${META_TITLE_MAX} karakter.`;
     if (seo.metaDescription.length > META_DESC_MAX) e.metaDescription = `Maksimal ${META_DESC_MAX} karakter.`;
@@ -203,7 +204,7 @@ function PostEditor({
       slug,
       title: v.title.trim(),
       excerpt: v.excerpt.trim(),
-      tag: tags.length ? v.tag : undefined,
+      tags: site.hasPostTags ? v.tags : [],
       // Periode tayang tidak lagi dipakai; bersihkan sisa data lama saat disimpan.
       startsAt: "",
       endsAt: "",
@@ -322,8 +323,8 @@ function PostEditor({
                     value={v.type}
                     onChange={(e) => {
                       const type = e.target.value as PostType;
-                      // Tag lama belum tentu ada di tipe baru: pakai tag pertama tipe tersebut.
-                      setV({ ...v, type, tag: tagsFor(site, type)[0]?.value });
+                      // Tag terikat pada jenis: kosongkan, admin memilih ulang tag jenis baru.
+                      setV({ ...v, type, tags: [] });
                     }}
                     className={inputCls}
                   >
@@ -335,26 +336,24 @@ function PostEditor({
                   </select>
                 )}
               </Field>
-              {tags.length > 0 && (
-                <Field label="Tag" error={errors.tag} showOn="Label kecil di kartu dan halaman detail publikasi">
-                  {(id, d) => (
-                    <select
-                      id={id}
-                      aria-describedby={d}
-                      aria-invalid={!!errors.tag}
-                      value={v.tag ?? ""}
-                      onChange={(e) => setV({ ...v, tag: e.target.value })}
-                      className={inputCls}
-                    >
-                      {!tags.some((t) => t.value === v.tag) && <option value="">Pilih tag</option>}
-                      {tags.map((t) => (
-                        <option key={t.value} value={t.value}>
-                          {t.label}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </Field>
+              {site.hasPostTags && (
+                <TagPicker
+                  type={v.type}
+                  options={typeTags}
+                  allTags={allTags}
+                  selected={v.tags}
+                  error={errors.tags}
+                  // Update fungsional: tag baru tiba setelah simpan async, isi form bisa sudah berubah.
+                  onAdd={(tag) =>
+                    setV((cur) =>
+                      cur.type !== tag.type || cur.tags.includes(tag.id) || cur.tags.length >= POST_TAGS_MAX
+                        ? cur
+                        : { ...cur, tags: [...cur.tags, tag.id] },
+                    )
+                  }
+                  onRemove={(id) => setV((cur) => ({ ...cur, tags: cur.tags.filter((x) => x !== id) }))}
+                  createTag={createTag}
+                />
               )}
               <fieldset>
                 <legend className="mb-2 text-[11px] font-extrabold tracking-[0.12em] text-ink-3 uppercase">Status</legend>
@@ -442,6 +441,157 @@ function PostEditor({
         }}
       />
     </div>
+  );
+}
+
+const NEW_TAG = "__new";
+
+/** Pilih 1–3 tag dari jenis post ini. Tag baru bisa ditambah dari dropdown dan langsung tersimpan. */
+function TagPicker({
+  type,
+  options,
+  allTags,
+  selected,
+  error,
+  onAdd,
+  onRemove,
+  createTag,
+}: {
+  type: PostType;
+  /** Tag milik jenis `type`. */
+  options: PostTag[];
+  /** Semua tag situs, untuk cek slug kembar. */
+  allTags: PostTag[];
+  selected: string[];
+  error?: string;
+  onAdd: (tag: PostTag) => void;
+  onRemove: (id: string) => void;
+  createTag: (label: string, type: PostType) => Promise<PostTag | null>;
+}) {
+  const [adding, setAdding] = useState(false);
+  const [label, setLabel] = useState("");
+  const [addError, setAddError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const full = selected.length >= POST_TAGS_MAX;
+  const chosen = selected.flatMap((id) => options.find((t) => t.id === id) ?? []);
+  const available = options.filter((t) => !selected.includes(t.id));
+
+  const cancel = () => {
+    setAdding(false);
+    setLabel("");
+    setAddError(null);
+  };
+
+  async function add() {
+    const l = label.trim();
+    const slug = slugify(l);
+    if (l.length < 2) return setAddError("Label minimal 2 karakter.");
+    if (!slug) return setAddError("Gunakan huruf atau angka.");
+    // Pesan cepat; repo memeriksa lagi saat menyimpan.
+    if (options.some((t) => t.label.toLowerCase() === l.toLowerCase()) || allTags.some((t) => t.slug === slug))
+      return setAddError("Tag ini sudah ada.");
+    setBusy(true);
+    const tag = await createTag(l, type);
+    setBusy(false);
+    if (!tag) return;
+    onAdd(tag);
+    cancel();
+  }
+
+  return (
+    <Field
+      label="Tag"
+      error={error}
+      hint={`${selected.length}/${POST_TAGS_MAX} tag.${full ? " Maksimal 3 tag." : ""}`}
+      showOn="Label kartu, halaman detail, dan filter tag di website"
+    >
+      {(id, d) => (
+        <div className="grid gap-2">
+          {chosen.length > 0 && (
+            <ul className="flex flex-wrap gap-1.5" aria-label="Tag terpilih">
+              {chosen.map((t) => (
+                <li key={t.id} className="inline-flex items-center gap-1 rounded-lg bg-navy/10 py-1 pr-1 pl-2.5 text-[13px] font-bold text-navy">
+                  {t.label}
+                  <button
+                    type="button"
+                    aria-label={`Hapus tag ${t.label}`}
+                    onClick={() => onRemove(t.id)}
+                    className="grid size-5 place-items-center rounded-md hover:bg-navy/15"
+                  >
+                    <Icon name="close" size={13} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <select
+            id={id}
+            aria-describedby={d}
+            aria-invalid={!!error}
+            value=""
+            disabled={full || adding}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val === NEW_TAG) return setAdding(true);
+              const tag = options.find((t) => t.id === val);
+              if (tag) onAdd(tag);
+            }}
+            className={inputCls}
+          >
+            <option value="">{full ? "Maksimal 3 tag" : "Pilih tag…"}</option>
+            {available.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.label}
+              </option>
+            ))}
+            <option value={NEW_TAG}>+ Tambah tag baru…</option>
+          </select>
+          {adding && (
+            <div className="grid gap-2 rounded-xl border border-line bg-page p-3">
+              <label htmlFor={`${id}-new`} className="text-[13px] font-bold text-navy">
+                Tag baru untuk {POST_TYPE_LABEL[type]}
+              </label>
+              <div className="flex flex-wrap gap-2">
+                <input
+                  id={`${id}-new`}
+                  maxLength={TAG_LABEL_MAX}
+                  value={label}
+                  aria-invalid={!!addError}
+                  aria-describedby={addError ? `${id}-new-err` : undefined}
+                  onChange={(e) => {
+                    setLabel(e.target.value);
+                    setAddError(null);
+                  }}
+                  onKeyDown={(e) => {
+                    // Enter di sini menambah tag, bukan mengirim form post.
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      void add();
+                    } else if (e.key === "Escape") {
+                      e.preventDefault();
+                      cancel();
+                    }
+                  }}
+                  placeholder="Contoh: Workshop"
+                  className={`${inputCls} min-w-0 flex-[1_1_180px]`}
+                />
+                <Button size="sm" variant="primary" onClick={() => void add()} disabled={busy}>
+                  Tambah
+                </Button>
+                <Button size="sm" onClick={cancel} disabled={busy}>
+                  Batal
+                </Button>
+              </div>
+              {addError && (
+                <p id={`${id}-new-err`} className="text-[13px] font-medium text-danger">
+                  {addError}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </Field>
   );
 }
 

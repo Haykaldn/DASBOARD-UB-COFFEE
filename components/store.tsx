@@ -52,6 +52,7 @@ const EMPTY_CONTENT: SiteContent = {
   settings: { about: "", instagram: "", menuPdfUrl: "" },
   menu: [],
   posts: [],
+  postTags: [],
   gallery: [],
   outlets: [],
   meetingRoom: null,

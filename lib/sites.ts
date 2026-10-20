@@ -11,18 +11,8 @@ export const SITES: Record<SiteSlug, SiteConfig> = {
     hasGallery: false,
     menuStyle: "CAROUSEL",
     postTypes: ["BERITA", "ARTIKEL"],
-    // Sama dengan tag di kartu Berita & Artikel website.
-    postTags: {
-      BERITA: [
-        { value: "event", label: "Event" },
-        { value: "promo", label: "Promo" },
-        { value: "info", label: "Info" },
-      ],
-      ARTIKEL: [
-        { value: "tips", label: "Tips Kopi" },
-        { value: "cerita", label: "Cerita" },
-      ],
-    },
+    // Daftar tag adalah data (SiteContent.postTags), sama dengan filter tag di website.
+    hasPostTags: true,
     hasPostDetail: true,
     hasMenuPdf: true,
     hasTasteTags: false,
@@ -39,6 +29,7 @@ export const SITES: Record<SiteSlug, SiteConfig> = {
     hasGallery: true,
     menuStyle: "LIST",
     postTypes: ["EVENT", "PROMO", "MENU_BARU"],
+    hasPostTags: false,
     hasPostDetail: true,
     hasMenuPdf: false,
     hasTasteTags: true,
