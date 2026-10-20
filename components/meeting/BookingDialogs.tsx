@@ -6,6 +6,7 @@ import {
   findConflict,
   isPast,
   openRange,
+  overCapacity,
   roomOf,
   ROOMS,
   statusLabel,
@@ -39,7 +40,12 @@ function Summary({ b }: { b: Booking }) {
         ["Ruang", roomOf(b.roomId).name],
         ["Tanggal", formatDateLong(b.date)],
         ["Jam", `${hhmm(b.start)} – ${hhmm(b.end)}`],
-        ["Peserta", `${b.pax} orang (kapasitas ${roomOf(b.roomId).capacity})`],
+        [
+          "Peserta",
+          roomOf(b.roomId).capacity === undefined
+            ? `${b.pax} orang`
+            : `${b.pax} orang (kapasitas ${roomOf(b.roomId).capacity})`,
+        ],
         ...(b.note ? ([["Catatan pemesan", b.note]] as Array<[string, ReactNode]>) : []),
       ];
   return (
@@ -403,7 +409,7 @@ export function ManualBookingDialog({
     if (v.purpose.trim().length < 3) e.purpose = "Isi keperluan (minimal 3 karakter).";
     const pax = Number(v.pax);
     if (!Number.isInteger(pax) || pax < 1) e.pax = "Isi jumlah peserta.";
-    else if (pax > room.capacity) e.pax = `Kapasitas ${room.name} maksimal ${room.capacity} orang.`;
+    else if (overCapacity(room, pax)) e.pax = `Kapasitas ${room.name} maksimal ${room.capacity} orang.`;
     if (!date) e.date = "Pilih tanggal.";
     else if (date < todayISO()) e.date = "Tanggal sudah lewat.";
     else if (!range) e.date = "UB Coffee libur pada tanggal ini.";
@@ -502,7 +508,11 @@ export function ManualBookingDialog({
               />
             )}
           </Field>
-          <Field label="Jumlah peserta" error={errors.pax} hint={`Kapasitas ${room.name}: ${room.capacity} orang.`}>
+          <Field
+            label="Jumlah peserta"
+            error={errors.pax}
+            hint={room.capacity === undefined ? undefined : `Kapasitas ${room.name}: ${room.capacity} orang.`}
+          >
             {(id, d) => (
               <input
                 id={id}
@@ -552,7 +562,7 @@ export function ManualBookingDialog({
                 <span className="min-w-0">
                   <span className="block font-bold text-navy">{r.name}</span>
                   <span className="block text-xs text-ink-3">
-                    {r.kind} · maks. {r.capacity} orang
+                    {r.capacity === undefined ? r.kind : `${r.kind} · maks. ${r.capacity} orang`}
                   </span>
                 </span>
               </label>

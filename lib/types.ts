@@ -11,10 +11,16 @@ export type SessionUser = {
   sites: SiteSlug[];
 };
 
-/** Tempat yang bisa dibooking di UB Coffee. Daftar & kapasitas: ROOMS di lib/booking.ts. */
-export type RoomId = "mr1" | "mr2" | "open";
+/** Tempat yang bisa dibooking di UB Coffee (id sama dengan landing page). Daftar & kapasitas: ROOMS di lib/booking.ts. */
+export type RoomId = "arjuna" | "semeru" | "open-space";
 
-export type Room = { id: RoomId; name: string; kind: "Ruang meeting" | "Open space"; capacity: number };
+export type Room = {
+  id: RoomId;
+  name: string;
+  kind: "Ruang meeting" | "Open space";
+  /** Orang. Kosong = tanpa batas kapasitas (Open Space). */
+  capacity?: number;
+};
 
 export type BookingStatus = "PENDING" | "CONFIRMED" | "REJECTED" | "CANCELLED" | "COMPLETED" | "NO_SHOW";
 

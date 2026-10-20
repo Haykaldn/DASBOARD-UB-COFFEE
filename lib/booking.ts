@@ -1,14 +1,19 @@
 import { formatDateLong, hhmm, todayISO, nowHHMM, toMinutes, weekdayIndex } from "./format";
 import type { Booking, BookingStatus, Outlet, Room, RoomId } from "./types";
 
-/** 2 ruang meeting + 1 open space. Nama & kapasitas disesuaikan dengan kondisi UB Coffee. */
+/** 2 ruang meeting + 1 open space, sama dengan landing page. Open Space tanpa batas kapasitas. */
 export const ROOMS: Room[] = [
-  { id: "mr1", name: "Meeting Room 1", kind: "Ruang meeting", capacity: 15 },
-  { id: "mr2", name: "Meeting Room 2", kind: "Ruang meeting", capacity: 15 },
-  { id: "open", name: "Open Space", kind: "Open space", capacity: 30 },
+  { id: "arjuna", name: "Arjuna Meeting Room", kind: "Ruang meeting", capacity: 15 },
+  { id: "semeru", name: "Semeru Meeting Room", kind: "Ruang meeting", capacity: 15 },
+  { id: "open-space", name: "Open Space", kind: "Open space" },
 ];
 
 export const roomOf = (id: RoomId): Room => ROOMS.find((r) => r.id === id) ?? ROOMS[0];
+
+/** true jika ruang punya kapasitas dan `pax` melebihinya. Ruang tanpa kapasitas tidak dibatasi. */
+export function overCapacity(room: Room, pax: number) {
+  return room.capacity !== undefined && pax > room.capacity;
+}
 
 /** Jeda bersih-bersih antar booking di ruang yang sama (menit). */
 export const BUFFER_MIN = 30;

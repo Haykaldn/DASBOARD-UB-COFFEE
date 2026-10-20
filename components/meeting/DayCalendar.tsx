@@ -110,7 +110,7 @@ export default function DayCalendar({
                   <div className="flex flex-col justify-center border-r border-line bg-page px-3">
                     <p className="text-[13px] leading-tight font-extrabold text-navy">{room.name}</p>
                     <p className="text-[11px] leading-tight text-ink-3">
-                      {room.kind} · {room.capacity} orang
+                      {room.capacity === undefined ? room.kind : `${room.kind} · ${room.capacity} orang`}
                     </p>
                   </div>
 
