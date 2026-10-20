@@ -8,7 +8,10 @@ import { useBookings } from "../data-hooks";
 import Icon from "../Icon";
 import { useStore } from "../store";
 import { Button, EmptyState, inputCls, SkeletonPage, StatCard, StatGrid } from "../ui";
-import { ConfirmBookingDialog, DetailDialog, ManualBookingDialog, ReasonDialog } from "./BookingDialogs";
+import { ConfirmBookingDialog } from "./dialogs/ConfirmBookingDialog";
+import { DetailDialog } from "./dialogs/DetailDialog";
+import { ManualBookingDialog } from "./dialogs/ManualBookingDialog";
+import { ReasonDialog } from "./dialogs/ReasonDialog";
 import BookingRow from "./BookingRow";
 import DayCalendar from "./DayCalendar";
 
