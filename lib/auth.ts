@@ -17,10 +17,18 @@ function secret(): string {
   return "dev-only-secret-ganti-di-env";
 }
 
-const DEMO_PASSWORD = process.env.DEMO_PASSWORD ?? "brawijaya-admin-2026";
+/** Kata sandi akun demo hanya dari env (repo publik). Wajib di production, sama seperti AUTH_SECRET. */
+function demoPassword(): string {
+  const p = process.env.DEMO_PASSWORD;
+  if (p) return p;
+  if (process.env.NODE_ENV === "production") throw new Error("DEMO_PASSWORD belum diisi");
+  return "dev-only-password";
+}
+
 const SALT = "cms-demo-salt";
 const hash = (pw: string) => scryptSync(pw, SALT, 32);
-const DEMO_HASH = hash(DEMO_PASSWORD);
+// Dihitung saat login pertama (bukan saat file dimuat) agar build tanpa env tetap berhasil.
+let demoHash: Buffer | null = null;
 
 const USERS: SessionUser[] = [
   { id: "u1", name: "Super Admin", email: "super@ubcoffee.id", role: "SUPER_ADMIN", sites: ["ub-coffee", "brewi-jaya"] },
@@ -33,7 +41,8 @@ export const DEMO_ACCOUNTS = USERS.map((u) => ({ email: u.email, user: u }));
 export function verifyCredentials(email: string, password: string): SessionUser | null {
   const user = USERS.find((u) => u.email === email.trim().toLowerCase());
   // Selalu hitung hash agar waktu respons sama untuk email ada / tidak ada.
-  const ok = timingSafeEqual(hash(password), DEMO_HASH);
+  demoHash ??= hash(demoPassword());
+  const ok = timingSafeEqual(hash(password), demoHash);
   return user && ok ? user : null;
 }
 

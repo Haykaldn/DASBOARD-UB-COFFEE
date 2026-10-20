@@ -51,7 +51,7 @@ export default function SortableGrid<T>({
   items: T[];
   getId: (it: T) => string;
   getLabel: (it: T, index: number) => string;
-  /** Boleh mengembalikan Promise (mis. `save(...)`): urutan baru ditahan sampai selesai; `false` = gagal, dikembalikan. */
+  /** Boleh mengembalikan Promise (mis. `reorder()` dari data-hooks): urutan baru ditahan sampai selesai; `false` = gagal, dikembalikan. */
   onReorder: (next: T[]) => void | Promise<unknown>;
   renderItem: (it: T, index: number, handle: ReactNode) => ReactNode;
   className: string;

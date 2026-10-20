@@ -27,7 +27,7 @@ export default async function LoginPage() {
           <details className="mt-4 rounded-2xl border border-line bg-white p-4 text-sm text-ink-2">
             <summary className="cursor-pointer font-semibold text-ink">Akun demo (hanya development)</summary>
             <p className="mt-2">
-              Kata sandi semua akun: <code className="rounded bg-page px-1">brawijaya-admin-2026</code>
+              Kata sandi: nilai <code className="rounded bg-page px-1">DEMO_PASSWORD</code> di <code className="rounded bg-page px-1">.env.local</code>
             </p>
             <ul className="mt-2 space-y-1">
               {DEMO_ACCOUNTS.map((a) => (
