@@ -32,6 +32,15 @@ const FILTER_TITLE: Record<Filter, string> = {
   all: "Semua booking",
 };
 
+// Warna dropdown status mengikuti status yang dipilih, supaya filter aktif terlihat jelas.
+const FILTER_TONE: Record<Filter, string> = {
+  pending: "border-amber-300 bg-amber-50 text-amber-800",
+  confirmed: "border-emerald-300 bg-emerald-50 text-emerald-800",
+  done: "border-slate-300 bg-slate-100 text-slate-700",
+  rejected: "border-red-200 bg-red-50 text-red-700",
+  all: "border-navy/40 bg-navy/5 text-navy",
+};
+
 const matches = (b: Booking, f: Filter) => f === "all" || (!b.isInternal && GROUPS[f].includes(b.status));
 
 type Modal =
@@ -130,13 +139,13 @@ export default function MeetingRoomView() {
             id="mr-status"
             value={filter}
             onChange={(e) => setFilter(e.target.value as Filter)}
-            className={`${inputCls} font-semibold`}
+            className={`min-h-11 w-full cursor-pointer rounded-xl border-[1.5px] px-3.5 text-[15px] font-bold outline-none transition-colors focus:ring-2 focus:ring-navy/15 ${FILTER_TONE[filter]}`}
           >
-            <option value="pending">Menunggu konfirmasi ({counts.pending})</option>
-            <option value="confirmed">Dikonfirmasi ({counts.confirmed})</option>
-            <option value="done">Selesai ({counts.done})</option>
-            <option value="rejected">Ditolak / dibatalkan ({counts.rejected})</option>
-            <option value="all">Semua status ({counts.all})</option>
+            <option value="pending" className="bg-white text-ink">Menunggu konfirmasi ({counts.pending})</option>
+            <option value="confirmed" className="bg-white text-ink">Dikonfirmasi ({counts.confirmed})</option>
+            <option value="done" className="bg-white text-ink">Selesai ({counts.done})</option>
+            <option value="rejected" className="bg-white text-ink">Ditolak / dibatalkan ({counts.rejected})</option>
+            <option value="all" className="bg-white text-ink">Semua status ({counts.all})</option>
           </select>
         </div>
         <div className="relative min-w-0 flex-[1_1_320px]">
